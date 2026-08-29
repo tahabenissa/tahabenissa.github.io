@@ -6,7 +6,8 @@ const initials = SITE.author.name
   .split(' ')
   .map((w) => w[0])
   .slice(0, 2)
-  .join('');
+  .join('')
+  .toUpperCase();
 
 /** '/papers/foo' should still light up the Papers link. */
 const isCurrent = (href: string) =>
@@ -16,7 +17,12 @@ const isCurrent = (href: string) =>
 <header class="site-header">
   <div class="wrap site-header__inner">
     <a class="brand" href="/">
-      <span class="brand__mark" aria-hidden="true">{initials}</span>
+      {/* Initials sit behind the photo; a missing file removes the img and
+          reveals them, so the mark never renders as a broken image. */}
+      <span class="brand__mark" aria-hidden="true">
+        <span class="brand__initials">{initials}</span>
+        {SITE.author.avatar && <img src={SITE.author.avatar} alt="" onerror="this.remove()" />}
+      </span>
       {SITE.title}
     </a>
 

@@ -1,20 +1,24 @@
 ---
 import Base from '../layouts/Base.astro';
+import Portrait from '../components/Portrait.astro';
 import { SITE } from '../config';
 ---
 
 <Base title="About" description={SITE.author.bio} narrow>
-  <div class="page-head">
-    <p class="eyebrow">About</p>
-    <h1>{SITE.author.name}</h1>
+  <div class="about-head">
+    <Portrait size="132px" />
+    <div>
+      <p class="eyebrow">About</p>
+      <h1>{SITE.author.name}</h1>
+      <p class="lede" style="margin-bottom:0">{SITE.author.bio}</p>
+    </div>
   </div>
 
   <article class="prose">
-    <p class="lede">{SITE.author.bio}</p>
 
     <h2>What this site is</h2>
     <p>
-      A working notebook kept in public. Four things live here:
+      A working notebook kept in public. Five things live here:
     </p>
     <ul>
       <li>
@@ -33,6 +37,10 @@ import { SITE } from '../config';
       <li>
         <strong><a href="/projects">Projects</a></strong> — things I have built, with the results
         and the limitations stated plainly.
+      </li>
+      <li>
+        <strong><a href="/notes">Notes</a></strong> — deep dives on how a class of vulnerability
+        actually works, plus the short first-moves lists I reach for when a clock is running.
       </li>
     </ul>
 

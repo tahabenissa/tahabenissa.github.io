@@ -13,7 +13,7 @@ const years = [...new Set(papers.map((p) => p.data.date.getFullYear()))].sort((a
   title="Papers"
   description="Security and machine-learning papers I have read, with my notes on each one: what problem it solves, how, and whether the evaluation holds up."
 >
-  <div class="page-head">
+  <div class="page-head" data-reveal>
     <p class="eyebrow">Reading notes</p>
     <h1>Papers</h1>
     <p class="lede">
@@ -31,7 +31,7 @@ const years = [...new Set(papers.map((p) => p.data.date.getFullYear()))].sort((a
       </p>
     ) : (
       years.map((year) => (
-        <section class="section">
+        <section class="section" data-reveal>
           <div class="section-head">
             <h2>{year}</h2>
             <span class="faint mono">

@@ -22,6 +22,11 @@ export const SITE = {
       'This site is where I keep the notes.',
     email: 'tahabenissa30@gmail.com',
     location: 'Morocco',
+
+    // Your photo, served from public/. Drop the file in public/ and point
+    // here. Square crops look best — it is displayed as a circle.
+    // Set to '' to show an initials monogram instead.
+    avatar: '/me.jpg',
   },
 
   links: {

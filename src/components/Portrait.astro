@@ -1,0 +1,42 @@
+---
+import { SITE } from '../config';
+
+interface Props {
+  /** Override the CSS width; defaults to the responsive hero size. */
+  size?: string;
+  class?: string;
+}
+
+const { size, class: className } = Astro.props;
+
+const initials = SITE.author.name
+  .split(' ')
+  .map((w) => w[0])
+  .slice(0, 2)
+  .join('')
+  .toUpperCase();
+
+const src = SITE.author.avatar;
+---
+
+<!--
+  The initials sit underneath the photo. If the file is missing or fails to
+  load, the img removes itself and the monogram shows through — so the page
+  never displays a broken-image icon.
+-->
+<div class:list={['portrait', className]} style={size ? `width:${size}` : undefined}>
+  <span class="portrait__fallback" aria-hidden="true">{initials}</span>
+  {
+    src && (
+      <img
+        src={src}
+        alt={`${SITE.author.name}`}
+        width="352"
+        height="352"
+        loading="eager"
+        decoding="async"
+        onerror="this.remove()"
+      />
+    )
+  }
+</div>

@@ -13,7 +13,7 @@ const longform = notes.filter((n) => n.data.kind !== 'reflex');
   title="Notes"
   description="Technical notes: how a class of vulnerability actually works, and the first moves when I meet one under time pressure."
 >
-  <div class="page-head">
+  <div class="page-head" data-reveal>
     <p class="eyebrow">Reference</p>
     <h1>Notes</h1>
     <p class="lede">
@@ -32,7 +32,7 @@ const longform = notes.filter((n) => n.data.kind !== 'reflex');
     ) : (
       <>
         {longform.length > 0 && (
-          <section class="section">
+          <section class="section" data-reveal>
             <div class="section-head">
               <h2>Deep dives</h2>
               <span class="faint mono">{longform.length}</span>
@@ -58,7 +58,7 @@ const longform = notes.filter((n) => n.data.kind !== 'reflex');
         )}
 
         {reflexes.length > 0 && (
-          <section class="section">
+          <section class="section" data-reveal>
             <div class="section-head">
               <h2>Reflexes</h2>
               <span class="faint mono">{reflexes.length}</span>
