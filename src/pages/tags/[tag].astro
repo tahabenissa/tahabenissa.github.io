@@ -1,0 +1,89 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { formatDate, slugifyTag } from '../../lib/content';
+
+type Item = {
+  title: string;
+  href: string;
+  date: Date;
+  kind: string;
+};
+
+// NOTE: getStaticPaths is hoisted out of this module at build time, so it can
+// only use its own local scope and imports — no module-level helpers here.
+export async function getStaticPaths() {
+  const sections: [string, string][] = [
+    ['papers', 'paper'],
+    ['writeups', 'writeup'],
+    ['competitions', 'competition'],
+    ['projects', 'project'],
+    ['notes', 'note'],
+  ];
+
+  const items: (Item & { tags: string[] })[] = [];
+
+  for (const [collection, kind] of sections) {
+    const entries = await getCollection(collection as never);
+    for (const entry of entries as any[]) {
+      if (import.meta.env.PROD && entry.data.draft) continue;
+      items.push({
+        title: entry.data.title,
+        href: `/${collection}/${entry.id}`,
+        date: entry.data.date,
+        kind,
+        tags: entry.data.tags ?? [],
+      });
+    }
+  }
+
+  const groups = new Map<string, { label: string; items: Item[] }>();
+  for (const { tags, ...item } of items) {
+    for (const tag of tags) {
+      const slug = slugifyTag(tag);
+      if (!slug) continue;
+      if (!groups.has(slug)) groups.set(slug, { label: tag, items: [] });
+      groups.get(slug)!.items.push(item);
+    }
+  }
+
+  return [...groups.entries()].map(([slug, group]) => ({
+    params: { tag: slug },
+    props: {
+      label: group.label,
+      items: group.items.sort((a, b) => b.date.valueOf() - a.date.valueOf()),
+    },
+  }));
+}
+
+const { label, items } = Astro.props as { label: string; items: Item[] };
+---
+
+<Base title={`#${label}`} description={`Everything tagged ${label}.`} narrow>
+  <div class="page-head">
+    <p class="eyebrow">Tag</p>
+    <h1>{label}</h1>
+    <p class="lede">
+      {items.length}
+      {items.length === 1 ? 'entry' : 'entries'} across papers, writeups, competitions, projects and notes.
+    </p>
+  </div>
+
+  <div class="rows">
+    {
+      items.map((item) => (
+        <article class="row">
+          <div class="row__title">
+            <a href={item.href}>{item.title}</a>
+          </div>
+          <div class="row__date">{formatDate(item.date)}</div>
+          <div class="row__meta">
+            <span class="tag">{item.kind}</span>
+          </div>
+        </article>
+      ))
+    }
+  </div>
+
+  <p style="margin-top:2rem"><a href="/tags">&larr; All tags</a></p>
+</Base>

@@ -1,0 +1,31 @@
+---
+/**
+ * The key/value block at the top of a paper note or competition page.
+ * Rows whose value is null/undefined/'' are dropped, so callers can pass
+ * everything and let the component decide what is worth showing.
+ */
+interface Props {
+  rows: [string, unknown][];
+}
+
+const rows = Astro.props.rows.filter(
+  ([, value]) => value !== undefined && value !== null && value !== '' && !(Array.isArray(value) && value.length === 0)
+);
+---
+
+{
+  rows.length > 0 && (
+    <div class="facts-wrap">
+      <table class="facts">
+        <tbody>
+          {rows.map(([label, value]) => (
+            <tr>
+              <th scope="row">{label}</th>
+              <td>{Array.isArray(value) ? value.join(', ') : String(value)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}

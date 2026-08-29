@@ -1,0 +1,119 @@
+---
+import Base from '../../layouts/Base.astro';
+import { loadCollection, formatDate, rankClass, ordinal, topPercent } from '../../lib/content';
+
+const competitions = await loadCollection('competitions');
+
+const ranked = competitions.filter((c) => typeof c.data.rank === 'number');
+const podiums = ranked.filter((c) => c.data.rank! <= 3).length;
+const bestRank = ranked.length ? Math.min(...ranked.map((c) => c.data.rank!)) : null;
+
+const percentiles = competitions
+  .map((c) => topPercent(c.data.rank, c.data.totalTeams))
+  .filter((p): p is number => p !== null);
+const bestPct = percentiles.length ? Math.min(...percentiles) : null;
+
+const stats = [
+  { num: competitions.length, label: 'Competitions' },
+  { num: bestRank ? ordinal(bestRank) : '—', label: 'Best placement' },
+  { num: podiums, label: 'Podium finishes' },
+  { num: bestPct ? `top ${bestPct}%` : '—', label: 'Best percentile' },
+];
+---
+
+<Base
+  title="Competitions"
+  description="CTF competitions I have played and where I placed — team, rank, field size and score for each event."
+>
+  <div class="page-head">
+    <p class="eyebrow">Results</p>
+    <h1>Competitions</h1>
+    <p class="lede">
+      Every CTF I have played, with the placement as it was published — including the weak ones,
+      because those are what show the trajectory.
+    </p>
+  </div>
+
+  {
+    competitions.length === 0 ? (
+      <p class="empty">
+        No results yet. Add <code>published: true</code> to a note in{' '}
+        <code>CTF/04-Competitions/</code> and run <code>npm run sync</code>.
+      </p>
+    ) : (
+      <>
+        <div class="stats" style="margin-bottom:2.5rem">
+          {stats.map((s) => (
+            <div class="stat">
+              <div class="stat__num">{s.num}</div>
+              <div class="stat__label">{s.label}</div>
+            </div>
+          ))}
+        </div>
+
+        <div class="table-scroll">
+          <table class="results">
+            <thead>
+              <tr>
+                <th scope="col">Event</th>
+                <th scope="col">Date</th>
+                <th scope="col">Team</th>
+                <th scope="col" class="num">Rank</th>
+                <th scope="col" class="num">Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              {competitions.map((c) => {
+                const pct = topPercent(c.data.rank, c.data.totalTeams);
+                return (
+                  <tr>
+                    <td>
+                      <a class="results__event" href={`/competitions/${c.id}`}>
+                        {c.data.event}
+                      </a>
+                      <div class="results__sub">
+                        {[c.data.scope, c.data.format].filter(Boolean).join(' · ')}
+                      </div>
+                    </td>
+                    <td class="mono faint" style="white-space:nowrap">
+                      {formatDate(c.data.date)}
+                    </td>
+                    <td>
+                      {c.data.team ?? <span class="faint">solo</span>}
+                      {c.data.teamSize && <span class="faint"> ({c.data.teamSize})</span>}
+                    </td>
+                    <td class="num">
+                      {c.data.rank ? (
+                        <>
+                          <span class={rankClass(c.data.rank)}>
+                            {ordinal(c.data.rank)}
+                            {c.data.totalTeams && (
+                              <span class="rank__sub">/ {c.data.totalTeams}</span>
+                            )}
+                          </span>
+                          {pct && <div class="results__pct">top {pct}%</div>}
+                        </>
+                      ) : (
+                        <span class="faint">—</span>
+                      )}
+                    </td>
+                    <td class="num mono">
+                      {c.data.score !== undefined ? (
+                        <>
+                          {c.data.score}
+                          {c.data.maxScore && <span class="faint"> / {c.data.maxScore}</span>}
+                        </>
+                      ) : (
+                        <span class="faint">—</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </>
+    )
+  }
+</Base>

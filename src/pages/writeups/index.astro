@@ -1,0 +1,99 @@
+---
+import Base from '../../layouts/Base.astro';
+import Tags from '../../components/Tags.astro';
+import { loadCollection, formatDate } from '../../lib/content';
+
+const writeups = await loadCollection('writeups');
+
+const categories = [...new Set(writeups.map((w) => w.data.category))].sort();
+const platforms = [...new Set(writeups.map((w) => w.data.platform).filter(Boolean))] as string[];
+---
+
+<Base
+  title="Writeups"
+  description="CTF challenge and machine writeups: recon, the idea that cracked it, the exploit, and what I would do faster next time."
+>
+  <div class="page-head">
+    <p class="eyebrow">CTF</p>
+    <h1>Writeups</h1>
+    <p class="lede">
+      How I actually solved things — including the dead ends. {writeups.length}
+      {writeups.length === 1 ? 'writeup' : 'writeups'}
+      {platforms.length > 0 && ` across ${platforms.join(', ')}`}.
+    </p>
+  </div>
+
+  {
+    writeups.length === 0 ? (
+      <p class="empty">
+        Nothing published yet. Add <code>published: true</code> to a writeup in
+        <code>CTF/01-Writeups/</code> and run <code>npm run sync</code>.
+      </p>
+    ) : (
+      <>
+        {categories.length > 1 && (
+          <div class="toolbar" role="group" aria-label="Filter by category">
+            <span class="toolbar__label">Category</span>
+            <button class="filter-btn" type="button" data-filter="all" aria-pressed="true">
+              all ({writeups.length})
+            </button>
+            {categories.map((cat) => (
+              <button class="filter-btn" type="button" data-filter={cat} aria-pressed="false">
+                {cat} ({writeups.filter((w) => w.data.category === cat).length})
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div class="rows" id="writeup-list">
+          {writeups.map((w) => (
+            <article class="row" data-category={w.data.category}>
+              <div class="row__title">
+                <a href={`/writeups/${w.id}`}>{w.data.title}</a>
+              </div>
+              <div class="row__date">{formatDate(w.data.date)}</div>
+              <div class="row__meta">
+                <span class={`tag cat cat-${w.data.category}`}>{w.data.category}</span>
+                {w.data.platform && <span>{w.data.platform}</span>}
+                {w.data.event && <span>{w.data.event}</span>}
+                {w.data.difficulty && <span>{w.data.difficulty}</span>}
+                {w.data.points !== undefined && w.data.points > 0 && <span>{w.data.points} pts</span>}
+                {!w.data.solved && <span class="badge badge--warn">unsolved</span>}
+                {w.data.draft && <span class="badge badge--neutral">draft</span>}
+              </div>
+              {w.data.summary && <p class="row__summary">{w.data.summary}</p>}
+              {w.data.techniques.length > 0 && (
+                <div class="row__meta">
+                  <Tags tags={w.data.techniques} limit={5} link={false} />
+                </div>
+              )}
+            </article>
+          ))}
+        </div>
+
+        <p class="empty" id="writeup-none" hidden>No writeups in this category.</p>
+      </>
+    )
+  }
+</Base>
+
+<script>
+  const buttons = document.querySelectorAll<HTMLButtonElement>('.filter-btn');
+  const rows = document.querySelectorAll<HTMLElement>('#writeup-list .row');
+  const none = document.getElementById('writeup-none');
+
+  buttons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const wanted = btn.dataset.filter;
+      buttons.forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+
+      let shown = 0;
+      rows.forEach((row) => {
+        const match = wanted === 'all' || row.dataset.category === wanted;
+        row.hidden = !match;
+        if (match) shown++;
+      });
+      if (none) none.hidden = shown > 0;
+    });
+  });
+</script>

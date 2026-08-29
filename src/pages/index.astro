@@ -1,0 +1,229 @@
+---
+import Base from '../layouts/Base.astro';
+import Tags from '../components/Tags.astro';
+import { SITE } from '../config';
+import { loadCollection, formatDate, formatMonth, rankClass, ordinal, topPercent } from '../lib/content';
+
+const [papers, writeups, competitions, projects, notes] = await Promise.all([
+  loadCollection('papers'),
+  loadCollection('writeups'),
+  loadCollection('competitions'),
+  loadCollection('projects'),
+  loadCollection('notes'),
+]);
+
+const ranked = competitions.filter((c) => typeof c.data.rank === 'number');
+const bestRank = ranked.length ? Math.min(...ranked.map((c) => c.data.rank!)) : null;
+const bestComp = bestRank ? ranked.find((c) => c.data.rank === bestRank) : null;
+
+/** Only show a counter once it has something to count — an empty site
+ *  should look sparse, not like a row of zeroes. */
+const stats = [
+  { num: papers.length, label: 'Papers read', href: '/papers' },
+  { num: writeups.length, label: 'Writeups', href: '/writeups' },
+  { num: notes.length, label: 'Notes', href: '/notes' },
+  { num: competitions.length, label: 'Competitions', href: '/competitions' },
+  { num: projects.length, label: 'Projects', href: '/projects' },
+  ...(bestRank
+    ? [{
+        num: ordinal(bestRank),
+        label: bestComp ? `Best — ${bestComp.data.event}` : 'Best rank',
+        href: '/competitions',
+      }]
+    : []),
+].filter((s) => s.num !== 0);
+
+/** Featured projects first, then most recent. */
+const shownProjects = [...projects].sort(
+  (a, b) => Number(b.data.featured) - Number(a.data.featured)
+).slice(0, 4);
+
+const recentPapers = papers.slice(0, 4);
+const recentWriteups = writeups.slice(0, 5);
+const recentNotes = notes.slice(0, 5);
+const recentComps = competitions.slice(0, 3);
+---
+
+<Base>
+  <section class="hero">
+    <p class="eyebrow">{SITE.tagline}</p>
+    <h1>{SITE.author.name}</h1>
+    <p class="lede">{SITE.author.bio}</p>
+    <div class="hero__links">
+      <a class="btn btn--primary" href="/projects">See the projects</a>
+      <a class="btn" href={SITE.links.github} target="_blank" rel="noopener">GitHub</a>
+      <a class="btn" href="/about">About</a>
+    </div>
+  </section>
+
+  {stats.length > 0 && (
+  <section class="section">
+    <div class="stats">
+      {
+        stats.map((s) => (
+          <a class="stat" href={s.href} style="text-decoration:none;color:inherit;display:block">
+            <div class="stat__num">{s.num}</div>
+            <div class="stat__label">{s.label}</div>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+  )}
+
+  {
+    shownProjects.length > 0 && (
+      <section class="section">
+        <div class="section-head">
+          <h2>Projects</h2>
+          <a href="/projects">All projects &rarr;</a>
+        </div>
+        <div class="grid grid--2">
+          {shownProjects.map((p) => (
+            <article class="card">
+              <div class="card__meta">
+                <span class={`badge ${p.data.status === 'shipped' ? '' : 'badge--neutral'}`}>
+                  {p.data.status}
+                </span>
+                <span>{formatMonth(p.data.date)}</span>
+              </div>
+              <h3 class="card__title">
+                <a href={`/projects/${p.id}`}>{p.data.title}</a>
+              </h3>
+              {p.data.summary && <p class="card__body">{p.data.summary}</p>}
+              {p.data.results.length > 0 && (
+                <p class="card__body mono" style="color:var(--accent)">{p.data.results[0]}</p>
+              )}
+              <div class="card__foot">
+                <Tags tags={p.data.stack} limit={4} link={false} />
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  {
+    recentComps.length > 0 && (
+      <section class="section">
+        <div class="section-head">
+          <h2>Recent competitions</h2>
+          <a href="/competitions">All results &rarr;</a>
+        </div>
+        <div class="grid grid--3">
+          {recentComps.map((c) => {
+            const pct = topPercent(c.data.rank, c.data.totalTeams);
+            return (
+              <article class="card">
+                <div class="card__meta">
+                  <span>{formatMonth(c.data.date)}</span>
+                  {c.data.scope && <span class="tag">{c.data.scope}</span>}
+                </div>
+                <h3 class="card__title">
+                  <a href={`/competitions/${c.id}`}>{c.data.event}</a>
+                </h3>
+                <div class="card__meta">
+                  {c.data.rank && (
+                    <span class={rankClass(c.data.rank)}>
+                      {ordinal(c.data.rank)}
+                      {c.data.totalTeams && <span class="rank__sub">/ {c.data.totalTeams}</span>}
+                    </span>
+                  )}
+                  {pct && <span>top {pct}%</span>}
+                  {c.data.score !== undefined && <span>{c.data.score} pts</span>}
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+    )
+  }
+
+  {
+    recentNotes.length > 0 && (
+      <section class="section">
+        <div class="section-head">
+          <h2>Notes</h2>
+          <a href="/notes">All notes &rarr;</a>
+        </div>
+        <div class="grid grid--3">
+          {recentNotes.slice(0, 3).map((n) => (
+            <article class="card">
+              <div class="card__meta">
+                {n.data.topic && <span class={`tag cat cat-${n.data.topic}`}>{n.data.topic}</span>}
+                <span>{n.data.kind}</span>
+              </div>
+              <h3 class="card__title">
+                <a href={`/notes/${n.id}`}>{n.data.title}</a>
+              </h3>
+              {n.data.summary && <p class="card__body">{n.data.summary}</p>}
+            </article>
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:2.5rem;margin-top:3rem">
+    <section>
+      <div class="section-head">
+        <h2>Papers &amp; notes</h2>
+        <a href="/papers">All &rarr;</a>
+      </div>
+      {
+        recentPapers.length > 0 ? (
+          <div class="rows">
+            {recentPapers.map((p) => (
+              <article class="row">
+                <div class="row__title">
+                  <a href={`/papers/${p.id}`}>{p.data.title}</a>
+                </div>
+                <div class="row__date">{formatDate(p.data.date)}</div>
+                <div class="row__meta">
+                  {p.data.venue && <span>{p.data.venue}</span>}
+                  {p.data.pass && <span class="tag">pass {p.data.pass}</span>}
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p class="empty">
+            No paper notes published yet. Mark one <code>published: true</code> in your vault.
+          </p>
+        )
+      }
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>Writeups</h2>
+        <a href="/writeups">All &rarr;</a>
+      </div>
+      {
+        recentWriteups.length > 0 ? (
+          <div class="rows">
+            {recentWriteups.map((w) => (
+              <article class="row">
+                <div class="row__title">
+                  <a href={`/writeups/${w.id}`}>{w.data.title}</a>
+                </div>
+                <div class="row__date">{formatDate(w.data.date)}</div>
+                <div class="row__meta">
+                  <span class={`tag cat cat-${w.data.category}`}>{w.data.category}</span>
+                  {w.data.platform && <span>{w.data.platform}</span>}
+                  {w.data.difficulty && <span>{w.data.difficulty}</span>}
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p class="empty">
+            No writeups published yet. Mark one <code>published: true</code> in your vault.
+          </p>
+        )
+      }
+    </section>
+  </div>
+</Base>

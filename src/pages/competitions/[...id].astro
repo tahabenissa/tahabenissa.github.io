@@ -1,0 +1,126 @@
+---
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import Facts from '../../components/Facts.astro';
+import Tags from '../../components/Tags.astro';
+import { visible, formatDate, isoDate, rankClass, ordinal, topPercent } from '../../lib/content';
+
+export async function getStaticPaths() {
+  const comps = visible(await getCollection('competitions'));
+  return comps.map((entry) => ({ params: { id: entry.id }, props: { entry } }));
+}
+
+type Props = { entry: CollectionEntry<'competitions'> };
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+const d = entry.data;
+
+const pct = topPercent(d.rank, d.totalTeams);
+
+/** Writeups tagged with this event, newest first. */
+const writeups = visible(await getCollection('writeups'))
+  .filter((w) => w.data.event === d.event)
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+---
+
+<Base
+  title={d.event}
+  description={d.summary ?? `Results and writeups from ${d.event}${d.rank ? ` — placed ${ordinal(d.rank)}` : ''}.`}
+  narrow
+>
+  <p class="eyebrow">
+    <a href="/competitions" style="color:inherit;text-decoration:none">Competitions</a> / result
+  </p>
+
+  <div class="article-head">
+    <h1>{d.title}</h1>
+    <div class="article-meta">
+      <span><time datetime={isoDate(d.date)}>{formatDate(d.date)}</time></span>
+      {d.scope && <span>{d.scope}</span>}
+      <span>{d.format}</span>
+    </div>
+  </div>
+
+  {
+    d.rank && (
+      <div class="stats" style="margin-bottom:2rem">
+        <div class="stat">
+          <div class="stat__num">
+            <span class={rankClass(d.rank)}>{ordinal(d.rank)}</span>
+          </div>
+          <div class="stat__label">{d.totalTeams ? `of ${d.totalTeams} teams` : 'placement'}</div>
+        </div>
+        {pct && (
+          <div class="stat">
+            <div class="stat__num">top {pct}%</div>
+            <div class="stat__label">percentile</div>
+          </div>
+        )}
+        {d.score !== undefined && (
+          <div class="stat">
+            <div class="stat__num">{d.score}</div>
+            <div class="stat__label">{d.maxScore ? `of ${d.maxScore} points` : 'points'}</div>
+          </div>
+        )}
+        {d.solvedCount !== undefined && (
+          <div class="stat">
+            <div class="stat__num">{d.solvedCount}</div>
+            <div class="stat__label">challenges solved</div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  <Facts
+    rows={[
+      ['Event', d.event],
+      ['Organizer', d.organizer],
+      ['Format', d.format],
+      ['Scope', d.scope],
+      ['Team', d.team ? `${d.team}${d.teamSize ? ` (${d.teamSize} players)` : ''}` : 'Solo'],
+      ['Scoreboard', d.url],
+    ]}
+  />
+
+  {d.summary && <p class="lede" style="margin-bottom:2rem">{d.summary}</p>}
+
+  <article class="prose">
+    <Content />
+  </article>
+
+  {
+    writeups.length > 0 && (
+      <section style="margin-top:3rem">
+        <div class="section-head">
+          <h2>Writeups from this event</h2>
+          <span class="faint mono">{writeups.length}</span>
+        </div>
+        <div class="rows">
+          {writeups.map((w) => (
+            <article class="row">
+              <div class="row__title">
+                <a href={`/writeups/${w.id}`}>{w.data.title}</a>
+              </div>
+              <div class="row__date">{w.data.points ? `${w.data.points} pts` : ''}</div>
+              <div class="row__meta">
+                <span class={`tag cat cat-${w.data.category}`}>{w.data.category}</span>
+                {w.data.difficulty && <span>{w.data.difficulty}</span>}
+                {w.data.timeToFlag && <span>{w.data.timeToFlag}</span>}
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  {
+    d.tags.length > 0 && (
+      <footer style="margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--border)">
+        <p class="eyebrow">Tags</p>
+        <Tags tags={d.tags} />
+      </footer>
+    )
+  }
+</Base>

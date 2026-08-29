@@ -1,0 +1,85 @@
+---
+import Base from '../../layouts/Base.astro';
+import Tags from '../../components/Tags.astro';
+import { loadCollection, formatDate } from '../../lib/content';
+
+const notes = await loadCollection('notes');
+
+const reflexes = notes.filter((n) => n.data.kind === 'reflex');
+const longform = notes.filter((n) => n.data.kind !== 'reflex');
+---
+
+<Base
+  title="Notes"
+  description="Technical notes: how a class of vulnerability actually works, and the first moves when I meet one under time pressure."
+>
+  <div class="page-head">
+    <p class="eyebrow">Reference</p>
+    <h1>Notes</h1>
+    <p class="lede">
+      Two kinds. <strong>Deep dives</strong> explain a mechanism properly, from the simple version
+      to the details. <strong>Reflexes</strong> are the short first-moves lists I actually reach for
+      when a clock is running.
+    </p>
+  </div>
+
+  {
+    notes.length === 0 ? (
+      <p class="empty">
+        Nothing published yet. Add <code>published: true</code> to a note in
+        <code>explanations/</code> or <code>CTF/03-Reflexes/</code> and run <code>npm run sync</code>.
+      </p>
+    ) : (
+      <>
+        {longform.length > 0 && (
+          <section class="section">
+            <div class="section-head">
+              <h2>Deep dives</h2>
+              <span class="faint mono">{longform.length}</span>
+            </div>
+            <div class="grid grid--2">
+              {longform.map((n) => (
+                <article class="card">
+                  <div class="card__meta">
+                    {n.data.topic && <span class={`tag cat cat-${n.data.topic}`}>{n.data.topic}</span>}
+                    <span>{formatDate(n.data.date)}</span>
+                  </div>
+                  <h3 class="card__title">
+                    <a href={`/notes/${n.id}`}>{n.data.title}</a>
+                  </h3>
+                  {n.data.summary && <p class="card__body">{n.data.summary}</p>}
+                  <div class="card__foot">
+                    <Tags tags={n.data.tags} limit={4} />
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {reflexes.length > 0 && (
+          <section class="section">
+            <div class="section-head">
+              <h2>Reflexes</h2>
+              <span class="faint mono">{reflexes.length}</span>
+            </div>
+            <div class="rows">
+              {reflexes.map((n) => (
+                <article class="row">
+                  <div class="row__title">
+                    <a href={`/notes/${n.id}`}>{n.data.title}</a>
+                  </div>
+                  <div class="row__date">{formatDate(n.data.date)}</div>
+                  <div class="row__meta">
+                    {n.data.topic && <span class={`tag cat cat-${n.data.topic}`}>{n.data.topic}</span>}
+                    <Tags tags={n.data.tags} limit={4} />
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+      </>
+    )
+  }
+</Base>

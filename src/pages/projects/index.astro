@@ -1,0 +1,81 @@
+---
+import Base from '../../layouts/Base.astro';
+import Tags from '../../components/Tags.astro';
+import { loadCollection, formatMonth } from '../../lib/content';
+
+const projects = await loadCollection('projects');
+
+/** Featured first, then newest. */
+const ordered = [...projects].sort(
+  (a, b) => Number(b.data.featured) - Number(a.data.featured) || b.data.date.valueOf() - a.data.date.valueOf()
+);
+---
+
+<Base
+  title="Projects"
+  description="Things I have built — what problem each one solves, how it works, the results it produces, and what it does not do."
+>
+  <div class="page-head">
+    <p class="eyebrow">Built</p>
+    <h1>Projects</h1>
+    <p class="lede">
+      Each one states the problem, the approach, the numbers, and the limitations. The limitations
+      section is deliberate — work without stated limits is not finished work.
+    </p>
+  </div>
+
+  {
+    ordered.length === 0 ? (
+      <p class="empty">
+        No projects published yet. Add a note with <code>published: true</code> under
+        <code>Projets/</code> in your vault and run <code>npm run sync</code>.
+      </p>
+    ) : (
+      <div class="grid grid--2">
+        {ordered.map((p) => (
+          <article class="card">
+            <div class="card__meta">
+              <span class={`badge ${p.data.status === 'shipped' ? '' : 'badge--neutral'}`}>
+                {p.data.status}
+              </span>
+              <span>{formatMonth(p.data.date)}</span>
+              {p.data.featured && <span class="badge badge--warn">featured</span>}
+            </div>
+
+            <h2 class="card__title">
+              <a href={`/projects/${p.id}`}>{p.data.title}</a>
+            </h2>
+
+            {p.data.summary && <p class="card__body">{p.data.summary}</p>}
+
+            {p.data.results.length > 0 && (
+              <ul style="margin:0;padding-left:1.1rem;font-size:.85rem;color:var(--text-muted)">
+                {p.data.results.slice(0, 3).map((r) => (
+                  <li>{r}</li>
+                ))}
+              </ul>
+            )}
+
+            <div class="card__foot">
+              <Tags tags={p.data.stack} limit={5} link={false} />
+              {(p.data.repo || p.data.demo) && (
+                <div class="card__meta" style="margin-top:.6rem">
+                  {p.data.repo && (
+                    <a href={p.data.repo} target="_blank" rel="noopener">
+                      Source
+                    </a>
+                  )}
+                  {p.data.demo && (
+                    <a href={p.data.demo} target="_blank" rel="noopener">
+                      Demo
+                    </a>
+                  )}
+                </div>
+              )}
+            </div>
+          </article>
+        ))}
+      </div>
+    )
+  }
+</Base>

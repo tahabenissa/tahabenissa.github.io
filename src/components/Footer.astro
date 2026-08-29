@@ -1,0 +1,32 @@
+---
+import { SITE } from '../config';
+
+const year = new Date().getFullYear();
+const links = Object.entries(SITE.links) as [string, string][];
+const label: Record<string, string> = {
+  github: 'GitHub',
+  linkedin: 'LinkedIn',
+  x: 'X',
+  twitter: 'X',
+  scholar: 'Scholar',
+};
+---
+
+<footer class="site-footer">
+  <div class="wrap site-footer__inner">
+    <p style="margin:0">
+      &copy; {year} {SITE.author.name} &middot;
+      <a href="/rss.xml">RSS</a>
+    </p>
+    <div class="footer-links">
+      {
+        links.map(([key, href]) => (
+          <a href={href} rel="me noopener" target="_blank">
+            {label[key] ?? key}
+          </a>
+        ))
+      }
+      <a href={`mailto:${SITE.author.email}`}>Email</a>
+    </div>
+  </div>
+</footer>

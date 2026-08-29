@@ -1,0 +1,76 @@
+---
+import Base from '../../layouts/Base.astro';
+import Tags from '../../components/Tags.astro';
+import { loadCollection, formatDate } from '../../lib/content';
+
+const papers = await loadCollection('papers');
+
+/** Group by year so a long list stays readable. */
+const years = [...new Set(papers.map((p) => p.data.date.getFullYear()))].sort((a, b) => b - a);
+---
+
+<Base
+  title="Papers"
+  description="Security and machine-learning papers I have read, with my notes on each one: what problem it solves, how, and whether the evaluation holds up."
+>
+  <div class="page-head">
+    <p class="eyebrow">Reading notes</p>
+    <h1>Papers</h1>
+    <p class="lede">
+      Every paper I read properly gets a note: the problem, the contribution, how they evaluated it,
+      and what I would question. {papers.length}
+      {papers.length === 1 ? 'note' : 'notes'} so far.
+    </p>
+  </div>
+
+  {
+    papers.length === 0 ? (
+      <p class="empty">
+        Nothing published yet. Add <code>published: true</code> to a note in
+        <code>Recherche/02-Notes-de-Lecture/</code> and run <code>npm run sync</code>.
+      </p>
+    ) : (
+      years.map((year) => (
+        <section class="section">
+          <div class="section-head">
+            <h2>{year}</h2>
+            <span class="faint mono">
+              {papers.filter((p) => p.data.date.getFullYear() === year).length}
+            </span>
+          </div>
+          <div class="rows">
+            {papers
+              .filter((p) => p.data.date.getFullYear() === year)
+              .map((p) => (
+                <article class="row">
+                  <div class="row__title">
+                    <a href={`/papers/${p.id}`}>{p.data.title}</a>
+                  </div>
+                  <div class="row__date">{formatDate(p.data.date)}</div>
+                  <div class="row__meta">
+                    {p.data.venue && <span>{p.data.venue}</span>}
+                    {p.data.authors.length > 0 && (
+                      <span>
+                        {p.data.authors[0]}
+                        {p.data.authors.length > 1 ? ' et al.' : ''}
+                      </span>
+                    )}
+                    {p.data.pass && <span class="tag">pass {p.data.pass}</span>}
+                    {p.data.draft && <span class="badge badge--warn">draft</span>}
+                  </div>
+                  {(p.data.verdict || p.data.summary) && (
+                    <p class="row__summary">{p.data.verdict ?? p.data.summary}</p>
+                  )}
+                  {p.data.tags.length > 0 && (
+                    <div class="row__meta">
+                      <Tags tags={p.data.tags} limit={5} />
+                    </div>
+                  )}
+                </article>
+              ))}
+          </div>
+        </section>
+      ))
+    )
+  }
+</Base>

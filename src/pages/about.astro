@@ -1,0 +1,62 @@
+---
+import Base from '../layouts/Base.astro';
+import { SITE } from '../config';
+---
+
+<Base title="About" description={SITE.author.bio} narrow>
+  <div class="page-head">
+    <p class="eyebrow">About</p>
+    <h1>{SITE.author.name}</h1>
+  </div>
+
+  <article class="prose">
+    <p class="lede">{SITE.author.bio}</p>
+
+    <h2>What this site is</h2>
+    <p>
+      A working notebook kept in public. Four things live here:
+    </p>
+    <ul>
+      <li>
+        <strong><a href="/papers">Papers</a></strong> — security and machine-learning papers I have
+        read, each with a note covering the problem, the contribution, the evaluation, and what I
+        would question.
+      </li>
+      <li>
+        <strong><a href="/writeups">Writeups</a></strong> — how I solved CTF challenges and boxes,
+        including the dead ends, because the dead ends are where the method actually lives.
+      </li>
+      <li>
+        <strong><a href="/competitions">Competitions</a></strong> — every CTF I have played and
+        where I placed. All of them, not just the good ones.
+      </li>
+      <li>
+        <strong><a href="/projects">Projects</a></strong> — things I have built, with the results
+        and the limitations stated plainly.
+      </li>
+    </ul>
+
+    <h2>Focus</h2>
+    <p>
+      Network and systems security: intrusion detection, detection engineering, and applying
+      machine learning to security telemetry. Currently in my second year of computer engineering
+      (ARSI track) at IIT.
+    </p>
+
+    <h2>Contact</h2>
+    <p>
+      Email me at <a href={`mailto:${SITE.author.email}`}>{SITE.author.email}</a>, or find me on
+      {' '}<a href={SITE.links.github} target="_blank" rel="noopener">GitHub</a> and
+      {' '}<a href={SITE.links.linkedin} target="_blank" rel="noopener">LinkedIn</a>.
+    </p>
+
+    <h2>Colophon</h2>
+    <p>
+      Built with <a href="https://astro.build" target="_blank" rel="noopener">Astro</a>. Notes are
+      written in Obsidian and published from the vault, so what you read here is the same file I
+      actually study from. Source and full history are
+      {' '}<a href={SITE.links.github} target="_blank" rel="noopener">on GitHub</a>. There is an
+      {' '}<a href="/rss.xml">RSS feed</a> if you would rather not check back.
+    </p>
+  </article>
+</Base>

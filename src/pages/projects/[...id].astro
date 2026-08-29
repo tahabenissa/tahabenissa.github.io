@@ -1,0 +1,96 @@
+---
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import Tags from '../../components/Tags.astro';
+import { visible, formatDate, isoDate } from '../../lib/content';
+
+export async function getStaticPaths() {
+  const projects = visible(await getCollection('projects'));
+  return projects.map((entry) => ({ params: { id: entry.id }, props: { entry } }));
+}
+
+type Props = { entry: CollectionEntry<'projects'> };
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+const d = entry.data;
+---
+
+<Base title={d.title} description={d.summary ?? `Project: ${d.title}`} narrow>
+  <p class="eyebrow">
+    <a href="/projects" style="color:inherit;text-decoration:none">Projects</a> / {d.status}
+  </p>
+
+  <div class="article-head">
+    <h1>{d.title}</h1>
+    <div class="article-meta">
+      <span><time datetime={isoDate(d.date)}>{formatDate(d.date)}</time></span>
+      {d.updated && <span>updated {formatDate(d.updated)}</span>}
+      {d.role && <span>{d.role}</span>}
+      <span class={`badge ${d.status === 'shipped' ? '' : 'badge--neutral'}`}>{d.status}</span>
+    </div>
+  </div>
+
+  {d.summary && <p class="lede" style="margin-bottom:1.75rem">{d.summary}</p>}
+
+  {
+    d.cover && (
+      <img
+        src={d.cover}
+        alt=""
+        style="width:100%;border-radius:var(--radius);border:1px solid var(--border);margin-bottom:2rem"
+      />
+    )
+  }
+
+  {
+    (d.repo || d.demo) && (
+      <div class="hero__links" style="margin:0 0 2rem">
+        {d.repo && (
+          <a class="btn btn--primary" href={d.repo} target="_blank" rel="noopener">
+            Source code
+          </a>
+        )}
+        {d.demo && (
+          <a class="btn" href={d.demo} target="_blank" rel="noopener">
+            Live demo
+          </a>
+        )}
+      </div>
+    )
+  }
+
+  {
+    d.results.length > 0 && (
+      <div class="facts-wrap" style="padding:1.1rem 1.3rem">
+        <p class="eyebrow" style="margin-bottom:.6rem">Results</p>
+        <ul style="margin:0;padding-left:1.15rem">
+          {d.results.map((r) => (
+            <li style="margin-bottom:.3rem">{r}</li>
+          ))}
+        </ul>
+      </div>
+    )
+  }
+
+  {
+    d.stack.length > 0 && (
+      <div style="margin-bottom:2rem">
+        <p class="eyebrow">Stack</p>
+        <Tags tags={d.stack} link={false} />
+      </div>
+    )
+  }
+
+  <article class="prose">
+    <Content />
+  </article>
+
+  {
+    d.tags.length > 0 && (
+      <footer style="margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--border)">
+        <p class="eyebrow">Tags</p>
+        <Tags tags={d.tags} />
+      </footer>
+    )
+  }
+</Base>

@@ -1,0 +1,31 @@
+---
+import { slugifyTag } from '../lib/content';
+
+interface Props {
+  tags: string[];
+  /** Show at most this many, then a "+N" chip. */
+  limit?: number;
+  link?: boolean;
+}
+
+const { tags, limit, link = true } = Astro.props;
+const shown = limit ? tags.slice(0, limit) : tags;
+const hidden = tags.length - shown.length;
+---
+
+{
+  tags.length > 0 && (
+    <div class="tag-row">
+      {shown.map((tag) =>
+        link ? (
+          <a class="tag" href={`/tags/${slugifyTag(tag)}`}>
+            {tag}
+          </a>
+        ) : (
+          <span class="tag">{tag}</span>
+        )
+      )}
+      {hidden > 0 && <span class="tag">+{hidden}</span>}
+    </div>
+  )
+}

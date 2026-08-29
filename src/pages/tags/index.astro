@@ -1,0 +1,38 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { visible, tagCounts, slugifyTag } from '../../lib/content';
+
+const collections = await Promise.all([
+  getCollection('papers'),
+  getCollection('writeups'),
+  getCollection('competitions'),
+  getCollection('projects'),
+  getCollection('notes'),
+]);
+
+const all = collections.flatMap((c) => visible(c as any[]));
+const counts = tagCounts(all as { data: { tags?: string[] } }[]);
+---
+
+<Base title="Tags" description="Every topic covered on this site." narrow>
+  <div class="page-head">
+    <p class="eyebrow">Index</p>
+    <h1>Tags</h1>
+    <p class="lede">{counts.length} topics across everything published here.</p>
+  </div>
+
+  {
+    counts.length === 0 ? (
+      <p class="empty">No tags yet.</p>
+    ) : (
+      <div class="tag-row" style="gap:.5rem">
+        {counts.map(([tag, n]) => (
+          <a class="tag" href={`/tags/${slugifyTag(tag)}`} style="font-size:.8rem;padding:.25rem .6rem">
+            {tag} <span class="faint">{n}</span>
+          </a>
+        ))}
+      </div>
+    )
+  }
+</Base>
