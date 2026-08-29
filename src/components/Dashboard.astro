@@ -1,0 +1,418 @@
+---
+import {
+  SERIES,
+  SECTION_ORDER,
+  monthBuckets,
+  niceTicks,
+  columnPath,
+  barPath,
+  type Section,
+} from '../lib/dashboard';
+import { formatDate, ordinal, rankClass, topPercent } from '../lib/content';
+
+interface Props {
+  items: { section: Section; date: Date; title: string; id: string }[];
+  counts: Record<Section, number>;
+  writeupCategories: [string, number][];
+  competitions: {
+    id: string;
+    event: string;
+    date: Date;
+    rank?: number;
+    totalTeams?: number;
+  }[];
+}
+
+const { items, counts, writeupCategories, competitions } = Astro.props;
+
+const total = Object.values(counts).reduce((a, b) => a + b, 0);
+
+// ---------------------------------------------------------------------------
+// Activity — stacked columns, one per month
+// ---------------------------------------------------------------------------
+
+const buckets = monthBuckets(items, 12);
+/** Only chart the sections that actually have something in the window. */
+const activeSections = SECTION_ORDER.filter((s) => buckets.some((b) => b.counts[s] > 0));
+
+const A = { w: 760, h: 230, top: 16, right: 12, bottom: 34, left: 34 };
+const plotW = A.w - A.left - A.right;
+const plotH = A.h - A.top - A.bottom;
+
+const maxTotal = Math.max(1, ...buckets.map((b) => b.total));
+const aTicks = niceTicks(maxTotal);
+const aMax = aTicks[aTicks.length - 1];
+
+const band = plotW / buckets.length;
+const colW = Math.min(24, band * 0.56);
+const GAP = 2; // surface gap between stacked segments
+
+const aY = (v: number) => A.top + plotH - (v / aMax) * plotH;
+
+/** Pre-compute every segment so the template stays readable. */
+const columns = buckets.map((b, i) => {
+  const x = A.left + band * i + (band - colW) / 2;
+  let cursor = 0;
+  const segments = activeSections
+    .filter((s) => b.counts[s] > 0)
+    .map((s) => {
+      const value = b.counts[s];
+      const yTop = aY(cursor + value);
+      const yBottom = aY(cursor);
+      cursor += value;
+      const isTop = cursor === b.total;
+      const rawH = yBottom - yTop;
+      const h = Math.max(1, rawH - (isTop ? 0 : GAP));
+      return { section: s, value, x, y: yTop, w: colW, h, isTop };
+    });
+  return { bucket: b, x, centre: A.left + band * i + band / 2, segments };
+});
+
+// ---------------------------------------------------------------------------
+// Writeups by category — horizontal bars, single series
+// ---------------------------------------------------------------------------
+
+const catRows = writeupCategories.slice(0, 8);
+const catMax = Math.max(1, ...catRows.map(([, n]) => n));
+const C = { w: 420, rowH: 30, labelW: 92, valueW: 26, top: 6 };
+const catBarW = C.w - C.labelW - C.valueW;
+const catH = C.top * 2 + catRows.length * C.rowH;
+
+// ---------------------------------------------------------------------------
+// Competition placements — percentile over time, best at the top
+// ---------------------------------------------------------------------------
+
+const ranked = competitions
+  .map((c) => ({ ...c, pct: topPercent(c.rank, c.totalTeams) }))
+  .filter((c): c is typeof c & { pct: number } => c.pct !== null)
+  .sort((a, b) => a.date.valueOf() - b.date.valueOf());
+
+// Half-width panel: keep the viewBox near the rendered width so 11px text
+// stays 11px instead of being scaled down into illegibility.
+const R = { w: 430, h: 210, top: 22, right: 22, bottom: 34, left: 40 };
+const rPlotW = R.w - R.left - R.right;
+const rPlotH = R.h - R.top - R.bottom;
+/** Worst percentile on show, rounded up, so the axis has headroom. */
+const rWorst = Math.max(20, ...ranked.map((c) => c.pct));
+const rTicks = niceTicks(rWorst, 3);
+const rMax = rTicks[rTicks.length - 1];
+/** Inverted: 1% (best) sits at the top. */
+const rY = (pct: number) => R.top + (pct / rMax) * rPlotH;
+const rX = (i: number) =>
+  ranked.length === 1 ? R.left + rPlotW / 2 : R.left + (i / (ranked.length - 1)) * rPlotW;
+
+const rankLine = ranked.map((c, i) => `${i === 0 ? 'M' : 'L'}${rX(i)} ${rY(c.pct)}`).join(' ');
+
+const heroLabel = total === 1 ? 'entry published' : 'entries published';
+---
+
+<section class="viz dash" aria-labelledby="dash-title">
+  <div class="section-head">
+    <h2 id="dash-title">Dashboard</h2>
+    <a href="/tags">Browse by tag &rarr;</a>
+  </div>
+
+  <!-- Hero figure + the per-section tiles it breaks down into ------------- -->
+  <div class="dash__top">
+    <div class="hero-figure">
+      <div class="hero-figure__value">{total}</div>
+      <div class="hero-figure__label">{heroLabel}</div>
+    </div>
+
+    <div class="dash__tiles">
+      {
+        SECTION_ORDER.map((s) => (
+          <a class="tile" href={SERIES[s].href} data-slot={SERIES[s].slot}>
+            <span class="tile__key" aria-hidden="true" />
+            <span class="tile__value">{counts[s]}</span>
+            <span class="tile__label">{SERIES[s].label}</span>
+          </a>
+        ))
+      }
+    </div>
+  </div>
+
+  <!-- Activity ------------------------------------------------------------ -->
+  <figure class="panel">
+    <figcaption class="panel__head">
+      <h3>Activity</h3>
+      <p class="panel__sub">Entries published per month, last 12 months.</p>
+    </figcaption>
+
+    {
+      total === 0 ? (
+        <p class="empty">
+          Nothing published yet — this fills in as you mark notes <code>published: true</code>.
+        </p>
+      ) : (
+        <>
+          {activeSections.length > 1 && (
+            <ul class="legend">
+              {activeSections.map((s) => (
+                <li data-slot={SERIES[s].slot}>
+                  <span class="legend__key" aria-hidden="true" />
+                  {SERIES[s].label}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div class="panel__plot">
+            <svg
+              viewBox={`0 0 ${A.w} ${A.h}`}
+              role="img"
+              aria-label={`Entries published per month over the last 12 months. ${total} in total.`}
+            >
+              {aTicks.map((t) => (
+                <>
+                  <line class="grid" x1={A.left} x2={A.w - A.right} y1={aY(t)} y2={aY(t)} />
+                  <text class="tick tick--y" x={A.left - 8} y={aY(t) + 4}>
+                    {t}
+                  </text>
+                </>
+              ))}
+
+              {columns.map((col) => (
+                <>
+                  {col.segments.map((seg) => (
+                    <path
+                      d={columnPath(seg.x, seg.y, seg.w, seg.h, seg.isTop ? 4 : 0)}
+                      data-slot={SERIES[seg.section].slot}
+                      class="mark"
+                    />
+                  ))}
+                  {/* Total on the cap — the one direct label, never per segment. */}
+                  {col.bucket.total > 0 && (
+                    <text class="cap" x={col.centre} y={aY(col.bucket.total) - 7}>
+                      {col.bucket.total}
+                    </text>
+                  )}
+                  <text class="tick" x={col.centre} y={A.h - 12}>
+                    {col.bucket.label}
+                  </text>
+                  {/* Full-height hit area: bigger than the mark, per band. */}
+                  <rect
+                    class="hit"
+                    x={A.left + (col.centre - A.left) - band / 2}
+                    y={A.top}
+                    width={band}
+                    height={plotH}
+                    data-tip={
+                      col.bucket.total === 0
+                        ? `${col.bucket.label} ${col.bucket.year} — nothing published`
+                        : `${col.bucket.label} ${col.bucket.year} — ` +
+                          col.segments
+                            .map((s) => `${s.value} ${SERIES[s.section].label.toLowerCase()}`)
+                            .join(', ')
+                    }
+                  />
+                </>
+              ))}
+            </svg>
+          </div>
+
+          <details class="table-view">
+            <summary>Table view</summary>
+            <div class="table-scroll">
+              <table class="results">
+                <thead>
+                  <tr>
+                    <th scope="col">Month</th>
+                    {activeSections.map((s) => (
+                      <th scope="col" class="num">
+                        {SERIES[s].label}
+                      </th>
+                    ))}
+                    <th scope="col" class="num">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {buckets.map((b) => (
+                    <tr>
+                      <th scope="row" style="font-weight:540">
+                        {b.label} {b.year}
+                      </th>
+                      {activeSections.map((s) => (
+                        <td class="num mono">{b.counts[s] || '—'}</td>
+                      ))}
+                      <td class="num mono">{b.total || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </details>
+        </>
+      )
+    }
+  </figure>
+
+  <div class="dash__split">
+    <!-- Writeups by category ---------------------------------------------- -->
+    {
+      catRows.length > 0 && (
+        <figure class="panel">
+          <figcaption class="panel__head">
+            <h3>Writeups by category</h3>
+            <p class="panel__sub">Where the solves come from.</p>
+          </figcaption>
+
+          <div class="panel__plot">
+            <svg viewBox={`0 0 ${C.w} ${catH}`} role="img" aria-label="Writeups by category.">
+              {catRows.map(([name, n], i) => {
+                const y = C.top + i * C.rowH;
+                const h = Math.min(24, C.rowH - 8);
+                const w = Math.max(2, (n / catMax) * catBarW);
+                return (
+                  <>
+                    <text class="tick tick--y" x={C.labelW - 10} y={y + h / 2 + 4}>
+                      {name}
+                    </text>
+                    <path class="mark" d={barPath(C.labelW, y, w, h)} data-slot={1} />
+                    <text class="cap cap--left" x={C.labelW + w + 8} y={y + h / 2 + 4}>
+                      {n}
+                    </text>
+                    <rect
+                      class="hit"
+                      x={C.labelW}
+                      y={y - 4}
+                      width={catBarW + C.valueW}
+                      height={C.rowH}
+                      data-tip={`${name} — ${n} ${n === 1 ? 'writeup' : 'writeups'}`}
+                    />
+                  </>
+                );
+              })}
+            </svg>
+          </div>
+        </figure>
+      )
+    }
+
+    <!-- Competition placements -------------------------------------------- -->
+    {
+      ranked.length > 0 && (
+        <figure class="panel">
+          <figcaption class="panel__head">
+            <h3>Competition placements</h3>
+            <p class="panel__sub">Finishing percentile over time — higher on the chart is better.</p>
+          </figcaption>
+
+          <div class="panel__plot">
+            <svg
+              viewBox={`0 0 ${R.w} ${R.h}`}
+              role="img"
+              aria-label="Finishing percentile in each competition over time."
+            >
+              {rTicks.map((t) => (
+                <>
+                  <line class="grid" x1={R.left} x2={R.w - R.right} y1={rY(t)} y2={rY(t)} />
+                  <text class="tick tick--y" x={R.left - 8} y={rY(t) + 4}>
+                    {t}%
+                  </text>
+                </>
+              ))}
+
+              {ranked.length > 1 && <path class="line" d={rankLine} data-slot={5} />}
+
+              {ranked.map((c, i) => (
+                <>
+                  <circle class="dot" cx={rX(i)} cy={rY(c.pct)} r="5" data-slot={5} />
+                  <text class="tick" x={rX(i)} y={R.h - 12}>
+                    {c.date.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' })}
+                  </text>
+                  <circle
+                    class="hit"
+                    cx={rX(i)}
+                    cy={rY(c.pct)}
+                    r="16"
+                    data-tip={`${c.event} — ${ordinal(c.rank!)} of ${c.totalTeams}, top ${c.pct}%`}
+                  />
+                </>
+              ))}
+
+              {/* Label the best result only — never a number on every point. */}
+              {(() => {
+                const best = ranked.reduce((a, b) => (b.pct < a.pct ? b : a));
+                const i = ranked.indexOf(best);
+                return (
+                  <text class="cap" x={rX(i)} y={rY(best.pct) - 12}>
+                    top {best.pct}%
+                  </text>
+                );
+              })()}
+            </svg>
+          </div>
+
+          <details class="table-view">
+            <summary>Table view</summary>
+            <div class="table-scroll">
+              <table class="results">
+                <thead>
+                  <tr>
+                    <th scope="col">Event</th>
+                    <th scope="col">Date</th>
+                    <th scope="col" class="num">Rank</th>
+                    <th scope="col" class="num">Percentile</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ranked.map((c) => (
+                    <tr>
+                      <th scope="row" style="font-weight:540">
+                        <a href={`/competitions/${c.id}`}>{c.event}</a>
+                      </th>
+                      <td class="mono faint">{formatDate(c.date)}</td>
+                      <td class="num">
+                        <span class={rankClass(c.rank)}>
+                          {ordinal(c.rank!)}
+                          <span class="rank__sub">/ {c.totalTeams}</span>
+                        </span>
+                      </td>
+                      <td class="num mono">top {c.pct}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </details>
+        </figure>
+      )
+    }
+  </div>
+
+  <div class="viz-tip" role="status" aria-live="polite" hidden></div>
+</section>
+
+<script>
+  // One tooltip element per dashboard, moved to whichever mark is hovered.
+  const dash = document.querySelector<HTMLElement>('.dash');
+  const tip = dash?.querySelector<HTMLElement>('.viz-tip');
+
+  if (dash && tip) {
+    const show = (target: Element, clientX: number, clientY: number) => {
+      const text = target.getAttribute('data-tip');
+      if (!text) return;
+      tip.textContent = text;
+      tip.hidden = false;
+
+      const box = dash.getBoundingClientRect();
+      const tipBox = tip.getBoundingClientRect();
+      // Keep the tooltip inside the panel rather than letting it clip.
+      const x = Math.min(
+        Math.max(clientX - box.left - tipBox.width / 2, 4),
+        box.width - tipBox.width - 4
+      );
+      tip.style.transform = `translate(${x}px, ${clientY - box.top - tipBox.height - 14}px)`;
+    };
+
+    dash.addEventListener('pointermove', (e) => {
+      const hit = (e.target as Element).closest('.hit');
+      if (hit) show(hit, e.clientX, e.clientY);
+      else tip.hidden = true;
+    });
+    dash.addEventListener('pointerleave', () => {
+      tip.hidden = true;
+    });
+  }
+</script>

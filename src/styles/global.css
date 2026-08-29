@@ -779,3 +779,176 @@ a.stat:hover .stat__num { color: var(--accent); }
   flex-wrap: wrap; margin-bottom: 2.5rem;
 }
 .about-head > div { flex: 1 1 300px; min-width: 0; }
+
+/* ==========================================================================
+   Dashboard / data visualisation
+
+   Series colours are the reference categorical palette re-ordered to lead warm
+   (pure re-order, no hex changed), validated against this site's own surfaces
+   in both modes. Slots are bound to entities in src/lib/dashboard.ts and never
+   cycled. Light mode warns on slots 3 and 5 vs cream, so every chart here
+   ships direct labels and a table view.
+   ========================================================================== */
+
+.viz {
+  --surface:    #fdfbf7;
+  --series-1:   #eb6834;  /* orange  — writeups     */
+  --series-2:   #2a78d6;  /* blue    — papers       */
+  --series-3:   #1baf7a;  /* aqua    — notes        */
+  --series-4:   #4a3aa7;  /* violet  — projects     */
+  --series-5:   #eda100;  /* yellow  — competitions */
+  --grid:       #ece1cf;
+  --axis-ink:   #9a8a7c;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .viz {
+    --surface:  #1a1512;
+    --series-1: #d95926;
+    --series-2: #3987e5;
+    --series-3: #199e70;
+    --series-4: #9085e9;
+    --series-5: #c98500;
+    --grid:     #3b3027;
+    --axis-ink: #8d7c6c;
+  }
+}
+:root[data-theme="dark"] .viz {
+  --surface:  #1a1512;
+  --series-1: #d95926;
+  --series-2: #3987e5;
+  --series-3: #199e70;
+  --series-4: #9085e9;
+  --series-5: #c98500;
+  --grid:     #3b3027;
+  --axis-ink: #8d7c6c;
+}
+
+[data-slot="1"] { --series: var(--series-1); }
+[data-slot="2"] { --series: var(--series-2); }
+[data-slot="3"] { --series: var(--series-3); }
+[data-slot="4"] { --series: var(--series-4); }
+[data-slot="5"] { --series: var(--series-5); }
+
+.dash { position: relative; margin-bottom: 3.2rem; }
+
+/* --- hero figure + tiles --------------------------------------------------- */
+
+.dash__top {
+  display: flex; flex-wrap: wrap; gap: 1.15rem;
+  align-items: stretch; margin-bottom: 1.15rem;
+}
+
+.hero-figure {
+  flex: 0 0 auto; min-width: 168px;
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 1.1rem 1.4rem;
+  background: linear-gradient(150deg, var(--accent-soft), var(--bg-raised) 70%);
+  border: 1px solid var(--border); border-radius: var(--radius);
+}
+.hero-figure__value {
+  font-size: clamp(2.9rem, 7vw, 3.4rem); font-weight: 680;
+  line-height: 1; letter-spacing: -0.04em; color: var(--accent);
+  /* Proportional figures — tabular looks loose at display size. */
+}
+.hero-figure__label {
+  font-size: .82rem; color: var(--text-muted); margin-top: .35rem;
+}
+
+.dash__tiles {
+  flex: 1 1 340px;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  gap: .6rem;
+}
+.tile {
+  display: block; text-decoration: none;
+  padding: .7rem .8rem;
+  background: var(--bg-raised);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  transition: border-color .2s var(--ease), transform .2s var(--ease);
+}
+.tile:hover { border-color: var(--series); transform: translateY(-2px); }
+.tile__key {
+  display: block; width: 20px; height: 3px; border-radius: 2px;
+  background: var(--series); margin-bottom: .5rem;
+}
+.tile__value {
+  display: block; font-size: 1.45rem; font-weight: 650;
+  line-height: 1.1; letter-spacing: -0.03em; color: var(--text);
+}
+.tile__label {
+  display: block; font-size: .74rem; color: var(--text-faint);
+  text-transform: uppercase; letter-spacing: .06em; margin-top: .1rem;
+}
+
+/* --- panels --------------------------------------------------------------- */
+
+.panel {
+  margin: 0 0 1.15rem;
+  padding: 1.15rem 1.3rem 1.3rem;
+  background: var(--bg-raised);
+  border: 1px solid var(--border); border-radius: var(--radius);
+}
+.panel__head { margin-bottom: .9rem; }
+.panel__head h3 { font-size: 1rem; letter-spacing: -0.01em; }
+.panel__sub { font-size: .82rem; color: var(--text-muted); margin: .15rem 0 0; }
+.panel__plot { overflow-x: auto; }
+.panel__plot svg { display: block; width: 100%; height: auto; min-width: 340px; }
+
+.dash__split { display: grid; gap: 1.15rem; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
+.dash__split .panel { margin-bottom: 0; }
+
+/* --- marks ---------------------------------------------------------------- */
+
+.viz .mark { fill: var(--series); }
+.viz .line { fill: none; stroke: var(--series); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.viz .dot { fill: var(--series); stroke: var(--surface); stroke-width: 2; }
+.viz .grid { stroke: var(--grid); stroke-width: 1; }
+.viz .hit { fill: transparent; cursor: crosshair; }
+
+/* Text wears text tokens, never the series colour. */
+.viz .tick {
+  fill: var(--axis-ink); font-size: 11px; text-anchor: middle;
+  font-family: var(--font-sans); font-variant-numeric: tabular-nums;
+}
+.viz .tick--y { text-anchor: end; }
+.viz .cap {
+  fill: var(--text-muted); font-size: 11px; font-weight: 600;
+  text-anchor: middle; font-family: var(--font-sans);
+}
+.viz .cap--left { text-anchor: start; }
+
+/* --- legend --------------------------------------------------------------- */
+
+.legend {
+  list-style: none; margin: 0 0 .9rem; padding: 0;
+  display: flex; flex-wrap: wrap; gap: .3rem 1.1rem;
+  font-size: .8rem; color: var(--text-muted);
+}
+.legend li { display: inline-flex; align-items: center; gap: .42rem; }
+.legend__key { width: 11px; height: 11px; border-radius: 3px; background: var(--series); }
+
+/* --- table view (the relief for sub-3:1 slots in light mode) -------------- */
+
+.table-view { margin-top: 1rem; border-top: 1px solid var(--border); padding-top: .7rem; }
+.table-view summary {
+  cursor: pointer; font-size: .8rem; color: var(--text-muted);
+  list-style: none; display: inline-flex; align-items: center; gap: .4rem;
+}
+.table-view summary::-webkit-details-marker { display: none; }
+.table-view summary::before { content: "▸"; font-size: .75em; transition: transform .2s var(--ease); }
+.table-view[open] summary::before { transform: rotate(90deg); }
+.table-view summary:hover { color: var(--accent); }
+.table-view .results { min-width: 480px; margin-top: .8rem; }
+
+/* --- tooltip -------------------------------------------------------------- */
+
+.viz-tip {
+  position: absolute; top: 0; left: 0; z-index: 5;
+  pointer-events: none;
+  max-width: 280px;
+  padding: .4rem .6rem;
+  font-size: .78rem; line-height: 1.4;
+  background: var(--text); color: var(--bg);
+  border-radius: 6px; box-shadow: var(--shadow);
+  will-change: transform;
+}

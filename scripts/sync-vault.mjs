@@ -475,6 +475,14 @@ function main() {
 
   const linkMap = new Map(candidates.map((c) => [slugify(path.basename(c.file, '.md')), `/${c.collection}/${c.slug}`]));
 
+  // Astro 5 keeps the content layer in node_modules/.astro. Its glob loader
+  // does not reliably drop entries whose file disappeared between runs, so an
+  // unpublished note would keep building. Clearing the cache here is what
+  // makes "remove the flag" actually remove the page.
+  for (const cache of [path.join(ROOT, 'node_modules', '.astro'), path.join(ROOT, '.astro')]) {
+    fs.rmSync(cache, { recursive: true, force: true });
+  }
+
   // Wipe generated content so unpublishing actually removes the page.
   for (const collection of COLLECTIONS) {
     const dir = path.join(ROOT, 'src', 'content', collection);

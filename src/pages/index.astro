@@ -3,7 +3,8 @@ import Base from '../layouts/Base.astro';
 import Tags from '../components/Tags.astro';
 import { SITE } from '../config';
 import Portrait from '../components/Portrait.astro';
-import { loadCollection, formatDate, formatMonth, rankClass, ordinal, topPercent } from '../lib/content';
+import Dashboard from '../components/Dashboard.astro';
+import { loadCollection, formatDate, formatMonth, rankClass, ordinal, topPercent, tagCounts } from '../lib/content';
 
 const [papers, writeups, competitions, projects, notes] = await Promise.all([
   loadCollection('papers'),
@@ -13,26 +14,33 @@ const [papers, writeups, competitions, projects, notes] = await Promise.all([
   loadCollection('notes'),
 ]);
 
-const ranked = competitions.filter((c) => typeof c.data.rank === 'number');
-const bestRank = ranked.length ? Math.min(...ranked.map((c) => c.data.rank!)) : null;
-const bestComp = bestRank ? ranked.find((c) => c.data.rank === bestRank) : null;
+/** One flat, dated stream across every section — the dashboard's raw input. */
+const activity = [
+  ...writeups.map((e) => ({ section: 'writeups' as const, date: e.data.date, title: e.data.title, id: e.id })),
+  ...papers.map((e) => ({ section: 'papers' as const, date: e.data.date, title: e.data.title, id: e.id })),
+  ...notes.map((e) => ({ section: 'notes' as const, date: e.data.date, title: e.data.title, id: e.id })),
+  ...projects.map((e) => ({ section: 'projects' as const, date: e.data.date, title: e.data.title, id: e.id })),
+  ...competitions.map((e) => ({ section: 'competitions' as const, date: e.data.date, title: e.data.event, id: e.id })),
+];
 
-/** Only show a counter once it has something to count — an empty site
- *  should look sparse, not like a row of zeroes. */
-const stats = [
-  { num: papers.length, label: 'Papers read', href: '/papers' },
-  { num: writeups.length, label: 'Writeups', href: '/writeups' },
-  { num: notes.length, label: 'Notes', href: '/notes' },
-  { num: competitions.length, label: 'Competitions', href: '/competitions' },
-  { num: projects.length, label: 'Projects', href: '/projects' },
-  ...(bestRank
-    ? [{
-        num: ordinal(bestRank),
-        label: bestComp ? `Best — ${bestComp.data.event}` : 'Best rank',
-        href: '/competitions',
-      }]
-    : []),
-].filter((s) => s.num !== 0);
+const sectionCounts = {
+  writeups: writeups.length,
+  papers: papers.length,
+  notes: notes.length,
+  projects: projects.length,
+  competitions: competitions.length,
+};
+
+/** Reuse the tag counter — a category is just a one-item tag list. */
+const writeupCategories = tagCounts(writeups.map((w) => ({ data: { tags: [w.data.category] } })));
+
+const compRows = competitions.map((c) => ({
+  id: c.id,
+  event: c.data.event,
+  date: c.data.date,
+  rank: c.data.rank,
+  totalTeams: c.data.totalTeams,
+}));
 
 /** Featured projects first, then most recent. */
 const shownProjects = [...projects].sort(
@@ -60,20 +68,12 @@ const recentComps = competitions.slice(0, 3);
     </div>
   </section>
 
-  {stats.length > 0 && (
-  <section class="section" data-reveal>
-    <div class="stats">
-      {
-        stats.map((s) => (
-          <a class="stat" href={s.href} style="text-decoration:none;color:inherit;display:block">
-            <div class="stat__num">{s.num}</div>
-            <div class="stat__label">{s.label}</div>
-          </a>
-        ))
-      }
-    </div>
-  </section>
-  )}
+  <Dashboard
+    items={activity}
+    counts={sectionCounts}
+    writeupCategories={writeupCategories}
+    competitions={compRows}
+  />
 
   {
     shownProjects.length > 0 && (
