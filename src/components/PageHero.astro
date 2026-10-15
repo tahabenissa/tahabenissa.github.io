@@ -1,0 +1,26 @@
+---
+/**
+ * The banded header at the top of every index page: a faint grid pattern,
+ * a two-tone mono title ("All Writeups"), and one line of context.
+ */
+interface Props {
+  /** Plain first word(s) of the title. */
+  lead?: string;
+  /** Accent-coloured word(s) of the title. */
+  accent: string;
+  subtitle?: string;
+}
+
+const { lead, accent, subtitle } = Astro.props;
+---
+
+<section class="page-hero">
+  <div class="grid-bg" aria-hidden="true"></div>
+  <div class="page-hero__inner wrap">
+    <h1 class="page-hero__title">
+      {lead && <span>{lead} </span>}<span class="accent">{accent}</span>
+    </h1>
+    {subtitle && <p class="page-hero__sub">{subtitle}</p>}
+    <slot />
+  </div>
+</section>

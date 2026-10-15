@@ -13,6 +13,18 @@ export const SITE = {
     'Papers I read and what I took from them, CTF writeups and competition results, ' +
     'and the projects I build. A working notebook, kept in public.',
 
+  /**
+   * The terminal-style logo in the header. `prefix` + `initial` is always
+   * shown; `rest` slides in on hover. "0x" + "T" + "aha" -> 0xTaha.
+   */
+  handle: { prefix: '0x', initial: 'T', rest: 'aha' },
+
+  /** The home-page hero types these out one after the other, in a loop. */
+  typewriter: ['0xTaha', 'Taha Ben Issa'],
+
+  /** One line under the name on the home page. */
+  role: 'Network & Systems Security Student',
+
   author: {
     name: 'Taha Ben Issa',
     // Second-year Génie Informatique (ARSI) — edit freely.
@@ -35,14 +47,31 @@ export const SITE = {
     // Delete any line you don't want shown in the header/footer.
   },
 
-  // Shown on the home page as your headline numbers. Set to null to hide a stat.
   nav: [
-    { href: '/papers', label: 'Papers' },
+    { href: '/', label: 'Home' },
     { href: '/writeups', label: 'Writeups' },
     { href: '/notes', label: 'Notes' },
+    { href: '/papers', label: 'Papers' },
     { href: '/competitions', label: 'Competitions' },
     { href: '/projects', label: 'Projects' },
     { href: '/about', label: 'About' },
+  ],
+
+  /** About page: the "Areas of Focus" grid. `color` is any CSS colour. */
+  focus: [
+    { icon: 'shield', name: 'Intrusion Detection', color: '#ef4444' },
+    { icon: 'network', name: 'Networks & Protocols', color: '#3b82f6' },
+    { icon: 'bug', name: 'Web Exploitation', color: '#10b981' },
+    { icon: 'cpu', name: 'ML for Security', color: '#a855f7' },
+    { icon: 'target', name: 'CTF Competitions', color: '#f97316' },
+    { icon: 'terminal', name: 'Systems Programming', color: '#06b6d4' },
+  ],
+
+  /** About page: the "Technologies & Tools" chips. */
+  technologies: [
+    'C', 'Python', 'Assembly', 'Bash', 'JavaScript',
+    'Linux', 'Windows', 'Docker', 'Wireshark', 'Burp Suite',
+    'Ghidra', 'GDB', 'Nmap', 'Scikit-learn', 'Git',
   ],
 } as const;
 

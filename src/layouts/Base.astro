@@ -7,15 +7,19 @@ import '../styles/global.css';
 interface Props {
   title?: string;
   description?: string;
-  /** Rendered above the page title as a small mono label. */
-  eyebrow?: string;
-  /** Narrower column, used for article pages. */
+  /** Narrower column, used for simple text pages. */
   narrow?: boolean;
+  /**
+   * The page lays out its own full-width sections (hero bands, etc.), so the
+   * layout adds no column and no vertical padding.
+   */
+  bare?: boolean;
 }
 
-const { title, description = SITE.description, narrow = false } = Astro.props;
+const { title, description = SITE.description, narrow = false, bare = false } = Astro.props;
 
-const pageTitle = title ? `${title} — ${SITE.title}` : `${SITE.title} — ${SITE.tagline}`;
+const handle = SITE.handle.prefix + SITE.handle.initial + SITE.handle.rest;
+const pageTitle = title ? `${title} | ${handle}` : `${handle} — ${SITE.tagline}`;
 const canonical = new URL(Astro.url.pathname, Astro.site ?? SITE.url).href;
 ---
 
@@ -32,8 +36,15 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? SITE.url).href;
     <link rel="alternate" type="application/rss+xml" title={SITE.title} href="/rss.xml" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap"
+    />
+
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content={SITE.title} />
+    <meta property="og:site_name" content={handle} />
     <meta property="og:title" content={title ?? SITE.title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
@@ -59,10 +70,16 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? SITE.url).href;
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
     <Header />
-    <main id="main">
-      <div class:list={['wrap', narrow && 'wrap-narrow']}>
-        <slot />
-      </div>
+    <main id="main" class:list={[bare && 'main--bare']}>
+      {
+        bare ? (
+          <slot />
+        ) : (
+          <div class:list={['wrap', narrow && 'wrap-narrow']}>
+            <slot />
+          </div>
+        )
+      }
     </main>
     <Footer />
 
@@ -97,6 +114,18 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? SITE.url).href;
           };
           onScroll();
           window.addEventListener('scroll', onScroll, { passive: true });
+        }
+
+        // Mobile menu.
+        var menuBtn = document.querySelector('.menu-toggle');
+        var mobileNav = document.getElementById('mobile-nav');
+        if (menuBtn && mobileNav) {
+          menuBtn.addEventListener('click', function () {
+            var open = menuBtn.getAttribute('aria-expanded') === 'true';
+            menuBtn.setAttribute('aria-expanded', String(!open));
+            menuBtn.setAttribute('aria-label', open ? 'Open menu' : 'Close menu');
+            mobileNav.hidden = open;
+          });
         }
       })();
 

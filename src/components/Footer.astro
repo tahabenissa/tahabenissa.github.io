@@ -1,32 +1,35 @@
 ---
 import { SITE } from '../config';
+import Icon from './Icon.astro';
 
 const year = new Date().getFullYear();
-const links = Object.entries(SITE.links) as [string, string][];
-const label: Record<string, string> = {
-  github: 'GitHub',
-  linkedin: 'LinkedIn',
-  x: 'X',
-  twitter: 'X',
-  scholar: 'Scholar',
-};
+const handle = SITE.handle.prefix + SITE.handle.initial + SITE.handle.rest;
 ---
 
 <footer class="site-footer">
   <div class="wrap site-footer__inner">
-    <p style="margin:0">
-      &copy; {year} {SITE.author.name} &middot;
-      <a href="/rss.xml">RSS</a>
-    </p>
-    <div class="footer-links">
-      {
-        links.map(([key, href]) => (
-          <a href={href} rel="me noopener" target="_blank">
-            {label[key] ?? key}
-          </a>
-        ))
-      }
-      <a href={`mailto:${SITE.author.email}`}>Email</a>
+    <div class="socials">
+      {SITE.links.github && (
+        <a class="social" href={SITE.links.github} target="_blank" rel="me noopener" title="GitHub" aria-label="GitHub">
+          <Icon name="github" size={18} />
+        </a>
+      )}
+      {SITE.links.linkedin && (
+        <a class="social" href={SITE.links.linkedin} target="_blank" rel="me noopener" title="LinkedIn" aria-label="LinkedIn">
+          <Icon name="linkedin" size={18} />
+        </a>
+      )}
+      <a class="social" href={`mailto:${SITE.author.email}`} title="Email" aria-label="Email">
+        <Icon name="mail" size={18} />
+      </a>
+      <a class="social" href="/rss.xml" title="RSS feed" aria-label="RSS feed">
+        <Icon name="rss" size={18} />
+      </a>
     </div>
+    <p>
+      Built with love.
+      <span class="accent mono">{handle}</span> &copy; {year}
+    </p>
+    <p class="faint small">Written in Obsidian, published with Astro.</p>
   </div>
 </footer>

@@ -1,13 +1,16 @@
 ---
 import { getCollection } from 'astro:content';
 import Base from '../../layouts/Base.astro';
-import { formatDate, slugifyTag } from '../../lib/content';
+import PageHero from '../../components/PageHero.astro';
+import PostCard from '../../components/PostCard.astro';
+import { slugifyTag } from '../../lib/content';
 
 type Item = {
   title: string;
   href: string;
   date: Date;
   kind: string;
+  summary?: string;
 };
 
 // NOTE: getStaticPaths is hoisted out of this module at build time, so it can
@@ -32,6 +35,7 @@ export async function getStaticPaths() {
         href: `/${collection}/${entry.id}`,
         date: entry.data.date,
         kind,
+        summary: entry.data.summary ?? entry.data.verdict,
         tags: entry.data.tags ?? [],
       });
     }
@@ -59,31 +63,22 @@ export async function getStaticPaths() {
 const { label, items } = Astro.props as { label: string; items: Item[] };
 ---
 
-<Base title={`#${label}`} description={`Everything tagged ${label}.`} narrow>
-  <div class="page-head">
-    <p class="eyebrow">Tag</p>
-    <h1>{label}</h1>
-    <p class="lede">
-      {items.length}
-      {items.length === 1 ? 'entry' : 'entries'} across papers, writeups, competitions, projects and notes.
-    </p>
-  </div>
+<Base title={`#${label}`} description={`Everything tagged ${label}.`} bare>
+  <PageHero
+    lead="#"
+    accent={label}
+    subtitle={`${items.length} ${items.length === 1 ? 'entry' : 'entries'} across papers, writeups, competitions, projects and notes.`}
+  >
+    <p class="page-hero__back"><a class="arrow-link" href="/tags">&larr; All tags</a></p>
+  </PageHero>
 
-  <div class="rows">
-    {
-      items.map((item) => (
-        <article class="row">
-          <div class="row__title">
-            <a href={item.href}>{item.title}</a>
-          </div>
-          <div class="row__date">{formatDate(item.date)}</div>
-          <div class="row__meta">
-            <span class="tag">{item.kind}</span>
-          </div>
-        </article>
-      ))
-    }
+  <div class="wrap page-body">
+    <div class="card-grid">
+      {
+        items.map((item) => (
+          <PostCard href={item.href} title={item.title} date={item.date} summary={item.summary} label={item.kind} />
+        ))
+      }
+    </div>
   </div>
-
-  <p style="margin-top:2rem"><a href="/tags">&larr; All tags</a></p>
 </Base>

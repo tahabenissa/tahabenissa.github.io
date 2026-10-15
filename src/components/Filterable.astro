@@ -1,0 +1,125 @@
+---
+import Icon from './Icon.astro';
+
+/**
+ * Search box + toggleable filter chips over a grid of PostCards.
+ * Each card carries `data-search` (lower-cased text) and `data-chips`
+ * (space-separated values); the script below hides what doesn't match.
+ * Without JavaScript every card is simply shown.
+ */
+interface Props {
+  /** Singular / plural noun for the count line: ['writeup', 'writeups']. */
+  noun: [string, string];
+  /** Chip values with their labels, in display order. */
+  chips: { value: string; label: string }[];
+  /** Label on the button that reveals the chips. */
+  chipsLabel?: string;
+  total: number;
+}
+
+const { noun, chips, chipsLabel = 'tags', total } = Astro.props;
+---
+
+<div class="filterable" data-filterable data-singular={noun[0]} data-plural={noun[1]}>
+  <div class="filter-bar">
+    <label class="search">
+      <Icon name="search" class="search__icon" />
+      <span class="visually-hidden">Search {noun[1]}</span>
+      <input type="search" placeholder={`Search ${noun[1]}...`} autocomplete="off" data-filter-input />
+    </label>
+
+    {
+      chips.length > 0 && (
+        <button class="btn btn--sm" type="button" aria-expanded="false" data-chips-toggle>
+          <Icon name="tag" />
+          <span data-chips-toggle-label>Show {chipsLabel}</span>
+          <Icon name="chevronDown" class="chev" />
+        </button>
+      )
+    }
+  </div>
+
+  {
+    chips.length > 0 && (
+      <div class="chip-row" role="group" aria-label={`Filter by ${chipsLabel}`} data-chips hidden>
+        <button class="chip chip--btn" type="button" data-chip="" aria-pressed="true">All</button>
+        {chips.map((c) => (
+          <button class="chip chip--btn" type="button" data-chip={c.value} aria-pressed="false">
+            #{c.label}
+          </button>
+        ))}
+      </div>
+    )
+  }
+
+  <p class="filter-count" data-filter-count aria-live="polite">
+    Showing all {total} {total === 1 ? noun[0] : noun[1]}
+  </p>
+
+  <div class="card-grid" data-filter-grid>
+    <slot />
+  </div>
+
+  <div class="no-results" data-filter-none hidden>
+    <Icon name="search" size={48} />
+    <h3>No {noun[1]} found</h3>
+    <p>Try a different search, or clear the selected tag.</p>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-filterable]').forEach((root) => {
+    const input = root.querySelector<HTMLInputElement>('[data-filter-input]');
+    const toggle = root.querySelector<HTMLButtonElement>('[data-chips-toggle]');
+    const toggleLabel = root.querySelector<HTMLElement>('[data-chips-toggle-label]');
+    const chipRow = root.querySelector<HTMLElement>('[data-chips]');
+    const chips = [...root.querySelectorAll<HTMLButtonElement>('[data-chip]')];
+    const cards = [...root.querySelectorAll<HTMLElement>('[data-filter-grid] [data-search]')];
+    const count = root.querySelector<HTMLElement>('[data-filter-count]');
+    const none = root.querySelector<HTMLElement>('[data-filter-none]');
+    const singular = root.dataset.singular ?? 'item';
+    const plural = root.dataset.plural ?? 'items';
+
+    let chip = '';
+
+    const apply = () => {
+      const q = (input?.value ?? '').trim().toLowerCase();
+      let shown = 0;
+      for (const card of cards) {
+        const textOk = !q || (card.dataset.search ?? '').includes(q);
+        const chipOk = !chip || (card.dataset.chips ?? '').split(' ').includes(chip);
+        card.hidden = !(textOk && chipOk);
+        if (!card.hidden) shown++;
+      }
+      if (count) {
+        const total = cards.length;
+        let line =
+          shown === total
+            ? `Showing all ${total} ${total === 1 ? singular : plural}`
+            : `Showing ${shown} of ${total} ${plural}`;
+        if (q) line += ` for "${q}"`;
+        if (chip) line += ` tagged "${chip}"`;
+        count.textContent = line;
+      }
+      if (none) none.hidden = shown > 0;
+    };
+
+    input?.addEventListener('input', apply);
+
+    toggle?.addEventListener('click', () => {
+      const open = toggle.getAttribute('aria-expanded') === 'true';
+      toggle.setAttribute('aria-expanded', String(!open));
+      if (chipRow) chipRow.hidden = open;
+      if (toggleLabel) toggleLabel.textContent = toggleLabel.textContent!.replace(open ? 'Hide' : 'Show', open ? 'Show' : 'Hide');
+    });
+
+    chips.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const value = btn.dataset.chip ?? '';
+        chip = chip === value ? '' : value;
+        chips.forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.chip ?? '') === chip)));
+        apply();
+      });
+    });
+  });
+</script>

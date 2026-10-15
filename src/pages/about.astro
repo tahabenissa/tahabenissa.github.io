@@ -1,70 +1,119 @@
 ---
 import Base from '../layouts/Base.astro';
+import PageHero from '../components/PageHero.astro';
 import Portrait from '../components/Portrait.astro';
+import Icon from '../components/Icon.astro';
 import { SITE } from '../config';
 ---
 
-<Base title="About" description={SITE.author.bio} narrow>
-  <div class="about-head">
-    <Portrait size="132px" />
-    <div>
-      <p class="eyebrow">About</p>
-      <h1>{SITE.author.name}</h1>
-      <p class="lede" style="margin-bottom:0">{SITE.author.bio}</p>
+<Base title="About" description={SITE.author.bio} bare>
+  <PageHero lead="About" accent="Me">
+    <div class="about-intro">
+      <Portrait size="128px" />
+      <div class="prose about-prose">
+        <p>
+          I'm {SITE.author.name}, a second-year computer engineering student on the ARSI track
+          (networks &amp; systems security) at IIT. I like understanding how systems work, how they
+          fail, and how to notice when someone is making them fail.
+        </p>
+        <p>
+          Most of what I learn comes from doing: CTFs, reading papers properly, and building tools
+          that detect attacks. This site is my notebook, kept in public — written in Obsidian and
+          published from the same files I actually study from.
+        </p>
+      </div>
     </div>
+  </PageHero>
+
+  <div class="wrap page-body">
+    <section class="about-section" data-reveal>
+      <div class="section-title">
+        <h2>Areas of Focus</h2>
+        <span class="section-title__bar"></span>
+      </div>
+      <div class="bento">
+        {
+          SITE.focus.map((f) => (
+            <div class="bento__item" style={`--c:${f.color}`}>
+              <Icon name={f.icon} size={22} class="bento__icon" />
+              <div class="bento__name">{f.name}</div>
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="about-section" data-reveal>
+      <div class="section-title">
+        <h2>Technologies &amp; Tools</h2>
+        <span class="section-title__bar"></span>
+      </div>
+      <div class="tech-row">
+        {SITE.technologies.map((t) => <span class="chip chip--outline chip--lg">{t}</span>)}
+      </div>
+    </section>
+
+    <section class="about-section" data-reveal>
+      <div class="section-title">
+        <h2>What Lives Here</h2>
+        <span class="section-title__bar"></span>
+      </div>
+      <div class="card-grid">
+        <a class="info-card" href="/writeups">
+          <Icon name="flag" size={20} class="accent" />
+          <h3>Writeups</h3>
+          <p>How I solved CTF challenges and boxes, including the dead ends — that's where the method lives.</p>
+        </a>
+        <a class="info-card" href="/notes">
+          <Icon name="book" size={20} class="accent" />
+          <h3>Notes</h3>
+          <p>Deep dives on how a class of vulnerability works, plus the first-moves lists I reach for under time pressure.</p>
+        </a>
+        <a class="info-card" href="/papers">
+          <Icon name="list" size={20} class="accent" />
+          <h3>Papers</h3>
+          <p>Security and ML papers I've read: the problem, the contribution, the evaluation, and what I'd question.</p>
+        </a>
+        <a class="info-card" href="/competitions">
+          <Icon name="trophy" size={20} class="accent" />
+          <h3>Competitions</h3>
+          <p>Every CTF I've played and where I placed. All of them, not just the good ones.</p>
+        </a>
+        <a class="info-card" href="/projects">
+          <Icon name="folder" size={20} class="accent" />
+          <h3>Projects</h3>
+          <p>Things I've built, with the results and the limitations stated plainly.</p>
+        </a>
+        <a class="info-card" href="/tags">
+          <Icon name="tag" size={20} class="accent" />
+          <h3>Tags</h3>
+          <p>Every topic across the site, in one index.</p>
+        </a>
+      </div>
+    </section>
+
+    <section class="about-cards" data-reveal>
+      <div class="info-card info-card--static">
+        <h3 class="mono">Get in Touch</h3>
+        <p>
+          Always happy to talk with other security students and researchers, team up for a CTF, or
+          discuss a paper.
+        </p>
+        <div class="socials">
+          <a class="social" href={SITE.links.github} target="_blank" rel="me noopener" aria-label="GitHub"><Icon name="github" size={18} /></a>
+          <a class="social" href={SITE.links.linkedin} target="_blank" rel="me noopener" aria-label="LinkedIn"><Icon name="linkedin" size={18} /></a>
+          <a class="social" href={`mailto:${SITE.author.email}`} aria-label="Email"><Icon name="mail" size={18} /></a>
+        </div>
+      </div>
+      <div class="info-card info-card--static">
+        <h3 class="mono">Colophon</h3>
+        <p>
+          Built with <a href="https://astro.build" target="_blank" rel="noopener">Astro</a>, no
+          runtime and no database. Source and full history are
+          {' '}<a href={SITE.links.github} target="_blank" rel="noopener">on GitHub</a>, and there is an
+          {' '}<a href="/rss.xml">RSS feed</a> if you'd rather not check back.
+        </p>
+      </div>
+    </section>
   </div>
-
-  <article class="prose">
-
-    <h2>What this site is</h2>
-    <p>
-      A working notebook kept in public. Five things live here:
-    </p>
-    <ul>
-      <li>
-        <strong><a href="/papers">Papers</a></strong> — security and machine-learning papers I have
-        read, each with a note covering the problem, the contribution, the evaluation, and what I
-        would question.
-      </li>
-      <li>
-        <strong><a href="/writeups">Writeups</a></strong> — how I solved CTF challenges and boxes,
-        including the dead ends, because the dead ends are where the method actually lives.
-      </li>
-      <li>
-        <strong><a href="/competitions">Competitions</a></strong> — every CTF I have played and
-        where I placed. All of them, not just the good ones.
-      </li>
-      <li>
-        <strong><a href="/projects">Projects</a></strong> — things I have built, with the results
-        and the limitations stated plainly.
-      </li>
-      <li>
-        <strong><a href="/notes">Notes</a></strong> — deep dives on how a class of vulnerability
-        actually works, plus the short first-moves lists I reach for when a clock is running.
-      </li>
-    </ul>
-
-    <h2>Focus</h2>
-    <p>
-      Network and systems security: intrusion detection, detection engineering, and applying
-      machine learning to security telemetry. Currently in my second year of computer engineering
-      (ARSI track) at IIT.
-    </p>
-
-    <h2>Contact</h2>
-    <p>
-      Email me at <a href={`mailto:${SITE.author.email}`}>{SITE.author.email}</a>, or find me on
-      {' '}<a href={SITE.links.github} target="_blank" rel="noopener">GitHub</a> and
-      {' '}<a href={SITE.links.linkedin} target="_blank" rel="noopener">LinkedIn</a>.
-    </p>
-
-    <h2>Colophon</h2>
-    <p>
-      Built with <a href="https://astro.build" target="_blank" rel="noopener">Astro</a>. Notes are
-      written in Obsidian and published from the vault, so what you read here is the same file I
-      actually study from. Source and full history are
-      {' '}<a href={SITE.links.github} target="_blank" rel="noopener">on GitHub</a>. There is an
-      {' '}<a href="/rss.xml">RSS feed</a> if you would rather not check back.
-    </p>
-  </article>
 </Base>

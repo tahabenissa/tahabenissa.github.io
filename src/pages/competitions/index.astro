@@ -1,5 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
+import PageHero from '../../components/PageHero.astro';
 import { loadCollection, formatDate, rankClass, ordinal, topPercent } from '../../lib/content';
 
 const competitions = await loadCollection('competitions');
@@ -24,15 +25,15 @@ const stats = [
 <Base
   title="Competitions"
   description="CTF competitions I have played and where I placed — team, rank, field size and score for each event."
+  bare
 >
-  <div class="page-head" data-reveal>
-    <p class="eyebrow">Results</p>
-    <h1>Competitions</h1>
-    <p class="lede">
-      Every CTF I have played, with the placement as it was published — including the weak ones,
-      because those are what show the trajectory.
-    </p>
-  </div>
+  <PageHero
+    lead="CTF"
+    accent="Competitions"
+    subtitle="Every CTF I have played, with the placement as it was published — including the weak ones, because those are what show the trajectory."
+  />
+
+  <div class="wrap page-body">
 
   {
     competitions.length === 0 ? (
@@ -116,4 +117,5 @@ const stats = [
       </>
     )
   }
+  </div>
 </Base>
