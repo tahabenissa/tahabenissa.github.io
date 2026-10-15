@@ -23,15 +23,15 @@ export const SITE = {
   typewriter: ['0xTaha', 'Taha Ben Issa'],
 
   /** One line under the name on the home page. */
-  role: 'Aspiring Malware Analyst',
+  role: 'Malware Analysis & Reverse Engineering',
 
   author: {
     name: 'Taha Ben Issa',
     // Second-year Génie Informatique (ARSI) — edit freely.
     bio:
-      'Second-year computer engineering student (ARSI) at IIT, working towards a malware analysis ' +
-      'internship. I document what I learn taking samples apart — static and dynamic analysis, ' +
-      'reverse engineering, Windows internals — through posts, study notes and cheatsheets.',
+      'Computer engineering student (ARSI) at IIT, into malware analysis. I take samples apart — ' +
+      'static and dynamic analysis, reverse engineering, Windows internals — and write up what ' +
+      'I find here as posts, study notes and cheatsheets.',
     email: 'tahabenissa30@gmail.com',
     location: 'Morocco',
 
