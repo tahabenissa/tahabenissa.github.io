@@ -3,34 +3,36 @@ import Base from '../../layouts/Base.astro';
 import PageHero from '../../components/PageHero.astro';
 import PostCard from '../../components/PostCard.astro';
 import Filterable from '../../components/Filterable.astro';
-import { loadCollection, readingTime, chipList, chipAttr } from '../../lib/content';
+import { loadCollection, readingTime, chipList, chipAttr, levelCounts } from '../../lib/content';
 
 const notes = await loadCollection('notes');
 
 const kindLabel = { reflex: 'reflex', 'deep-dive': 'deep dive', note: 'note' } as const;
-const chips = chipList(notes.map((n) => [kindLabel[n.data.kind], n.data.topic ?? '', ...n.data.tags]));
+const chips = chipList(
+  notes.map((n) => [n.data.topic ?? '', n.data.type ?? '', kindLabel[n.data.kind], ...n.data.tags])
+);
 ---
 
 <Base
-  title="Notes"
-  description="Technical notes: how a class of vulnerability actually works, and the first moves when I meet one under time pressure."
+  title="Study Notes"
+  description="Study notes on malware analysis, reverse engineering and Windows internals — filter them by level, from beginner to advanced."
   bare
 >
   <PageHero
-    lead="All"
+    lead="Study"
     accent="Notes"
-    subtitle={`${notes.length} ${notes.length === 1 ? 'note' : 'notes'}. Deep dives explain a mechanism properly; reflexes are the first-moves lists I reach for when a clock is running.`}
+    subtitle={`${notes.length} ${notes.length === 1 ? 'note' : 'notes'} from courses, books and labs. Filter by level, or sort from easy to hard.`}
   />
 
   <div class="wrap page-body">
     {
       notes.length === 0 ? (
         <p class="empty">
-          Nothing published yet. Add <code>published: true</code> to a note in
-          <code>explanations/</code> or <code>CTF/03-Reflexes/</code> and run <code>npm run sync</code>.
+          Nothing published yet. Write a note in <code>Website/Notes/</code> and run
+          <code>npm run publish</code>.
         </p>
       ) : (
-        <Filterable noun={['note', 'notes']} chips={chips} total={notes.length}>
+        <Filterable noun={['note', 'notes']} chips={chips} total={notes.length} levels levelCounts={levelCounts(notes)}>
           {notes.map((n) => (
             <PostCard
               href={`/notes/${n.id}`}
@@ -39,10 +41,12 @@ const chips = chipList(notes.map((n) => [kindLabel[n.data.kind], n.data.topic ??
               readingTime={readingTime(n.body)}
               summary={n.data.summary}
               tags={n.data.tags}
-              label={n.data.topic ? `${n.data.topic} · ${kindLabel[n.data.kind]}` : kindLabel[n.data.kind]}
+              level={n.data.level}
+              label={[n.data.topic, n.data.type ?? kindLabel[n.data.kind]].filter(Boolean).join(' · ')}
               labelClass={n.data.topic ? `cat cat-${n.data.topic}` : undefined}
+              meta={n.data.reference}
               draft={n.data.draft}
-              chips={chipAttr([kindLabel[n.data.kind], n.data.topic, ...n.data.tags])}
+              chips={chipAttr([n.data.topic, n.data.type, kindLabel[n.data.kind], ...n.data.tags])}
             />
           ))}
         </Filterable>

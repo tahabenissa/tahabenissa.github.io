@@ -1,0 +1,52 @@
+---
+import Base from '../../layouts/Base.astro';
+import PageHero from '../../components/PageHero.astro';
+import PostCard from '../../components/PostCard.astro';
+import Filterable from '../../components/Filterable.astro';
+import { loadCollection, readingTime, chipList, chipAttr, levelCounts } from '../../lib/content';
+
+const posts = await loadCollection('posts');
+const chips = chipList(posts.map((p) => [p.data.series ?? '', p.data.topic ?? '', ...p.data.tags]));
+---
+
+<Base
+  title="Posts"
+  description="Long-form posts on malware analysis, reverse engineering and Windows internals."
+  bare
+>
+  <PageHero
+    lead="All"
+    accent="Posts"
+    subtitle={`${posts.length} published ${posts.length === 1 ? 'post' : 'posts'} documenting what I take apart and learn in malware analysis.`}
+  />
+
+  <div class="wrap page-body">
+    {
+      posts.length === 0 ? (
+        <p class="empty">
+          No posts yet. Write one in <code>Website/Posts/</code> in the vault and run
+          <code>npm run publish</code>.
+        </p>
+      ) : (
+        <Filterable noun={['post', 'posts']} chips={chips} total={posts.length} levels levelCounts={levelCounts(posts)}>
+          {posts.map((p) => (
+            <PostCard
+              href={`/posts/${p.id}`}
+              title={p.data.title}
+              date={p.data.date}
+              readingTime={readingTime(p.body)}
+              summary={p.data.summary}
+              tags={p.data.tags}
+              level={p.data.level}
+              label={p.data.topic}
+              series={p.data.series ? `${p.data.series}${p.data.seriesOrder ? ` · Part ${p.data.seriesOrder}` : ''}` : undefined}
+              banner={p.data.banner}
+              draft={p.data.draft}
+              chips={chipAttr([p.data.series, p.data.topic, ...p.data.tags])}
+            />
+          ))}
+        </Filterable>
+      )
+    }
+  </div>
+</Base>

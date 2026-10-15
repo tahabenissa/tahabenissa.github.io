@@ -1,0 +1,89 @@
+---
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import Article from '../../layouts/Article.astro';
+import Icon from '../../components/Icon.astro';
+import { visible, readingTime, seriesOf } from '../../lib/content';
+
+export async function getStaticPaths() {
+  const posts = visible(await getCollection('posts'));
+  return posts.map((entry) => ({ params: { id: entry.id }, props: { entry } }));
+}
+
+type Props = { entry: CollectionEntry<'posts'> };
+const { entry } = Astro.props;
+const { Content, headings } = await render(entry);
+const d = entry.data;
+
+/** Every part of this post's series, in order, with prev / next. */
+const parts = d.series ? seriesOf(visible(await getCollection('posts')), d.series) : [];
+const at = parts.findIndex((p) => p.id === entry.id);
+const prev = at > 0 ? parts[at - 1] : undefined;
+const next = at >= 0 && at < parts.length - 1 ? parts[at + 1] : undefined;
+---
+
+<Article
+  title={d.title}
+  description={d.summary ?? d.title}
+  section={{ label: 'Posts', href: '/posts' }}
+  crumb={d.series ?? d.topic}
+  date={d.date}
+  updated={d.updated}
+  readingTime={readingTime(entry.body)}
+  summary={d.summary}
+  tags={d.tags}
+  headings={headings}
+  level={d.level}
+  banner={d.banner}
+  badges={[
+    ...(d.topic ? [{ text: d.topic, class: `tag cat cat-${d.topic}` }] : []),
+    ...(d.draft ? [{ text: 'draft', class: 'badge badge--warn' }] : []),
+  ]}
+>
+  {
+    parts.length > 1 && (
+      <nav slot="before" class="series-box" aria-label={`${d.series} series`}>
+        <p class="series-box__title">
+          <Icon name="list" size={14} /> {d.series} · part {at + 1} of {parts.length}
+        </p>
+        <ol>
+          {parts.map((p) =>
+            p.id === entry.id ? (
+              <li aria-current="page">{p.data.title}</li>
+            ) : (
+              <li>
+                <a href={`/posts/${p.id}`}>{p.data.title}</a>
+              </li>
+            )
+          )}
+        </ol>
+      </nav>
+    )
+  }
+
+  <Content />
+
+  {
+    (prev || next) && (
+      <nav slot="after" class="series-nav" aria-label="Series navigation">
+        {prev ? (
+          <a href={`/posts/${prev.id}`}>
+            <span class="series-nav__dir">
+              <Icon name="arrowLeft" size={14} /> Previous
+            </span>
+            <span class="series-nav__title">{prev.data.title}</span>
+          </a>
+        ) : (
+          <span />
+        )}
+        {next && (
+          <a class="series-nav__next" href={`/posts/${next.id}`}>
+            <span class="series-nav__dir">
+              Next <Icon name="arrowRight" size={14} />
+            </span>
+            <span class="series-nav__title">{next.data.title}</span>
+          </a>
+        )}
+      </nav>
+    )
+  }
+</Article>

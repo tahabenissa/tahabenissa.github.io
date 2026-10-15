@@ -5,11 +5,13 @@ import { SITE } from '../config';
 /** One feed for everything, so a subscriber does not have to pick a section. */
 export async function GET(context) {
   const sections = [
+    ['posts', 'Post'],
+    ['notes', 'Note'],
+    ['cheatsheets', 'Cheatsheet'],
     ['papers', 'Paper'],
     ['writeups', 'Writeup'],
     ['competitions', 'Competition'],
     ['projects', 'Project'],
-    ['notes', 'Note'],
   ];
 
   const items = [];

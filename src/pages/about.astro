@@ -13,13 +13,14 @@ import { SITE } from '../config';
       <div class="prose about-prose">
         <p>
           I'm {SITE.author.name}, a second-year computer engineering student on the ARSI track
-          (networks &amp; systems security) at IIT. I like understanding how systems work, how they
-          fail, and how to notice when someone is making them fail.
+          (networks &amp; systems security) at IIT, working towards an internship in
+          <strong>malware analysis</strong>.
         </p>
         <p>
-          Most of what I learn comes from doing: CTFs, reading papers properly, and building tools
-          that detect attacks. This site is my notebook, kept in public — written in Obsidian and
-          published from the same files I actually study from.
+          I learn by taking samples apart: static analysis of PE files, debugging in a safe lab,
+          reading the Windows APIs they abuse, and turning what I find into detections. This site
+          is my notebook, kept in public — every post, study note and cheatsheet is written in
+          Obsidian and published from the same files I study from.
         </p>
       </div>
     </div>
@@ -59,25 +60,25 @@ import { SITE } from '../config';
         <span class="section-title__bar"></span>
       </div>
       <div class="card-grid">
-        <a class="info-card" href="/writeups">
-          <Icon name="flag" size={20} class="accent" />
-          <h3>Writeups</h3>
-          <p>How I solved CTF challenges and boxes, including the dead ends — that's where the method lives.</p>
+        <a class="info-card" href="/posts">
+          <Icon name="bug" size={20} class="accent" />
+          <h3>Posts</h3>
+          <p>Long-form articles and series: analysing samples, unpacking, Windows internals, detection.</p>
         </a>
         <a class="info-card" href="/notes">
           <Icon name="book" size={20} class="accent" />
-          <h3>Notes</h3>
-          <p>Deep dives on how a class of vulnerability works, plus the first-moves lists I reach for under time pressure.</p>
+          <h3>Study Notes</h3>
+          <p>What I take from courses, books and labs — filter them by level, from beginner to advanced.</p>
         </a>
-        <a class="info-card" href="/papers">
+        <a class="info-card" href="/cheatsheets">
           <Icon name="list" size={20} class="accent" />
-          <h3>Papers</h3>
-          <p>Security and ML papers I've read: the problem, the contribution, the evaluation, and what I'd question.</p>
+          <h3>Cheatsheets</h3>
+          <p>One-page references for the tools and APIs I reach for during an analysis.</p>
         </a>
-        <a class="info-card" href="/competitions">
-          <Icon name="trophy" size={20} class="accent" />
-          <h3>Competitions</h3>
-          <p>Every CTF I've played and where I placed. All of them, not just the good ones.</p>
+        <a class="info-card" href="/writeups">
+          <Icon name="flag" size={20} class="accent" />
+          <h3>Writeups</h3>
+          <p>CTF challenges and boxes — reversing and forensics first — including the dead ends.</p>
         </a>
         <a class="info-card" href="/projects">
           <Icon name="folder" size={20} class="accent" />
@@ -96,8 +97,8 @@ import { SITE } from '../config';
       <div class="info-card info-card--static">
         <h3 class="mono">Get in Touch</h3>
         <p>
-          Always happy to talk with other security students and researchers, team up for a CTF, or
-          discuss a paper.
+          Looking for a malware analysis internship. Always happy to talk with analysts and other
+          students, swap notes on a sample, or team up for a CTF.
         </p>
         <div class="socials">
           <a class="social" href={SITE.links.github} target="_blank" rel="me noopener" aria-label="GitHub"><Icon name="github" size={18} /></a>

@@ -8,10 +8,10 @@ export const SITE = {
   base: '/', // '/blog' if you deploy to a project page instead of <user>.github.io
 
   title: 'Taha Ben Issa',
-  tagline: 'Network & systems security · detection engineering · ML for security',
+  tagline: 'Malware analysis · reverse engineering · Windows internals',
   description:
-    'Papers I read and what I took from them, CTF writeups and competition results, ' +
-    'and the projects I build. A working notebook, kept in public.',
+    'Documenting what I take apart and learn in malware analysis, reverse engineering ' +
+    'and Windows internals — posts, study notes, cheatsheets and CTF writeups.',
 
   /**
    * The terminal-style logo in the header. `prefix` + `initial` is always
@@ -23,15 +23,15 @@ export const SITE = {
   typewriter: ['0xTaha', 'Taha Ben Issa'],
 
   /** One line under the name on the home page. */
-  role: 'Network & Systems Security Student',
+  role: 'Aspiring Malware Analyst',
 
   author: {
     name: 'Taha Ben Issa',
     // Second-year Génie Informatique (ARSI) — edit freely.
     bio:
-      'Second-year computer engineering student (ARSI — networks & systems security) at IIT. ' +
-      'I read security papers, play CTFs, and build things that detect attacks. ' +
-      'This site is where I keep the notes.',
+      'Second-year computer engineering student (ARSI) at IIT, working towards a malware analysis ' +
+      'internship. I document what I learn taking samples apart — static and dynamic analysis, ' +
+      'reverse engineering, Windows internals — through posts, study notes and cheatsheets.',
     email: 'tahabenissa30@gmail.com',
     location: 'Morocco',
 
@@ -47,31 +47,38 @@ export const SITE = {
     // Delete any line you don't want shown in the header/footer.
   },
 
+  /**
+   * Header links. An entry with `collection` is only shown once that section
+   * has something published, so empty sections don't clutter the menu.
+   */
   nav: [
     { href: '/', label: 'Home' },
-    { href: '/writeups', label: 'Writeups' },
+    { href: '/posts', label: 'Posts' },
     { href: '/notes', label: 'Notes' },
-    { href: '/papers', label: 'Papers' },
-    { href: '/competitions', label: 'Competitions' },
-    { href: '/projects', label: 'Projects' },
+    { href: '/cheatsheets', label: 'Cheatsheets', collection: 'cheatsheets' },
+    { href: '/writeups', label: 'Writeups', collection: 'writeups' },
+    { href: '/projects', label: 'Projects', collection: 'projects' },
+    { href: '/papers', label: 'Papers', collection: 'papers' },
+    { href: '/competitions', label: 'Competitions', collection: 'competitions' },
     { href: '/about', label: 'About' },
   ],
 
   /** About page: the "Areas of Focus" grid. `color` is any CSS colour. */
   focus: [
-    { icon: 'shield', name: 'Intrusion Detection', color: '#ef4444' },
-    { icon: 'network', name: 'Networks & Protocols', color: '#3b82f6' },
-    { icon: 'bug', name: 'Web Exploitation', color: '#10b981' },
-    { icon: 'cpu', name: 'ML for Security', color: '#a855f7' },
+    { icon: 'bug', name: 'Malware Analysis', color: '#ef4444' },
+    { icon: 'cpu', name: 'Reverse Engineering', color: '#10b981' },
+    { icon: 'terminal', name: 'Windows Internals', color: '#3b82f6' },
+    { icon: 'shield', name: 'Detection (YARA / Sigma)', color: '#a855f7' },
+    { icon: 'network', name: 'Network Forensics', color: '#06b6d4' },
     { icon: 'target', name: 'CTF Competitions', color: '#f97316' },
-    { icon: 'terminal', name: 'Systems Programming', color: '#06b6d4' },
   ],
 
   /** About page: the "Technologies & Tools" chips. */
   technologies: [
-    'C', 'Python', 'Assembly', 'Bash', 'JavaScript',
-    'Linux', 'Windows', 'Docker', 'Wireshark', 'Burp Suite',
-    'Ghidra', 'GDB', 'Nmap', 'Scikit-learn', 'Git',
+    'C', 'x86/x64 Assembly', 'Python', 'PowerShell',
+    'Ghidra', 'IDA Free', 'x64dbg', 'PE-bear', 'Detect It Easy',
+    'Process Monitor', 'Process Hacker', 'Wireshark', 'YARA', 'Volatility',
+    'FLARE VM', 'REMnux', 'Linux', 'Windows',
   ],
 } as const;
 

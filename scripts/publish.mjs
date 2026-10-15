@@ -19,6 +19,17 @@ const run = (cmd, args, opts = {}) =>
 const capture = (cmd, args) =>
   execFileSync(cmd, args, { cwd: ROOT, encoding: 'utf8', shell: true }).trim();
 
+// The site deploys from main only — publishing from another branch would
+// push content that never goes live.
+const branch = capture('git', ['rev-parse', '--abbrev-ref', 'HEAD']);
+if (branch !== 'main') {
+  console.error(
+    `\n  You are on branch "${branch}", but the site deploys from "main".\n` +
+      `  Switch first:  git checkout main && git pull\n`
+  );
+  process.exit(1);
+}
+
 run('node', ['scripts/sync-vault.mjs']);
 
 console.log('Building...');

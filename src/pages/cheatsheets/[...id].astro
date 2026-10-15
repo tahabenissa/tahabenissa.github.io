@@ -1,0 +1,32 @@
+---
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import Article from '../../layouts/Article.astro';
+import { visible, readingTime } from '../../lib/content';
+
+export async function getStaticPaths() {
+  const sheets = visible(await getCollection('cheatsheets'));
+  return sheets.map((entry) => ({ params: { id: entry.id }, props: { entry } }));
+}
+
+type Props = { entry: CollectionEntry<'cheatsheets'> };
+const { entry } = Astro.props;
+const { Content, headings } = await render(entry);
+const d = entry.data;
+---
+
+<Article
+  title={d.title}
+  description={d.summary ?? `Cheatsheet: ${d.title}`}
+  section={{ label: 'Cheatsheets', href: '/cheatsheets' }}
+  crumb={d.topic}
+  date={d.date}
+  updated={d.updated}
+  readingTime={readingTime(entry.body)}
+  summary={d.summary}
+  tags={d.tags}
+  headings={headings}
+  level={d.level}
+  badges={d.draft ? [{ text: 'draft', class: 'badge badge--warn' }] : []}
+>
+  <Content />
+</Article>

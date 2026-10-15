@@ -6,7 +6,9 @@ import Dashboard from '../components/Dashboard.astro';
 import { SITE } from '../config';
 import { loadCollection, readingTime, tagCounts, slugifyTag, ordinal, topPercent } from '../lib/content';
 
-const [papers, writeups, competitions, projects, notes] = await Promise.all([
+const [posts, cheatsheets, papers, writeups, competitions, projects, notes] = await Promise.all([
+  loadCollection('posts'),
+  loadCollection('cheatsheets'),
   loadCollection('papers'),
   loadCollection('writeups'),
   loadCollection('competitions'),
@@ -16,6 +18,8 @@ const [papers, writeups, competitions, projects, notes] = await Promise.all([
 
 /** One flat, dated stream across every section — the dashboard's raw input. */
 const activity = [
+  ...posts.map((e) => ({ section: 'posts' as const, date: e.data.date, title: e.data.title, id: e.id })),
+  ...cheatsheets.map((e) => ({ section: 'cheatsheets' as const, date: e.data.date, title: e.data.title, id: e.id })),
   ...writeups.map((e) => ({ section: 'writeups' as const, date: e.data.date, title: e.data.title, id: e.id })),
   ...papers.map((e) => ({ section: 'papers' as const, date: e.data.date, title: e.data.title, id: e.id })),
   ...notes.map((e) => ({ section: 'notes' as const, date: e.data.date, title: e.data.title, id: e.id })),
@@ -24,6 +28,8 @@ const activity = [
 ];
 
 const sectionCounts = {
+  posts: posts.length,
+  cheatsheets: cheatsheets.length,
   writeups: writeups.length,
   papers: papers.length,
   notes: notes.length,
@@ -53,9 +59,31 @@ type Latest = {
   labelClass?: string;
   readingTime?: string;
   meta?: string;
+  level?: string;
+  series?: string;
 };
 
 const latest: Latest[] = [
+  ...posts.map((p) => ({
+    href: `/posts/${p.id}`,
+    title: p.data.title,
+    date: p.data.date,
+    summary: p.data.summary,
+    tags: p.data.tags,
+    label: p.data.topic ? `post · ${p.data.topic}` : 'post',
+    readingTime: readingTime(p.body),
+    level: p.data.level,
+    series: p.data.series ? `${p.data.series}${p.data.seriesOrder ? ` · Part ${p.data.seriesOrder}` : ''}` : undefined,
+  })),
+  ...cheatsheets.map((c) => ({
+    href: `/cheatsheets/${c.id}`,
+    title: c.data.title,
+    date: c.data.date,
+    summary: c.data.summary,
+    tags: c.data.tags,
+    label: 'cheatsheet',
+    level: c.data.level,
+  })),
   ...writeups.map((w) => ({
     href: `/writeups/${w.id}`,
     title: w.data.title,
@@ -76,6 +104,7 @@ const latest: Latest[] = [
     label: n.data.kind === 'reflex' ? 'reflex' : n.data.kind === 'deep-dive' ? 'deep dive' : 'note',
     labelClass: n.data.topic ? `cat cat-${n.data.topic}` : undefined,
     readingTime: readingTime(n.body),
+    level: n.data.level,
   })),
   ...papers.map((p) => ({
     href: `/papers/${p.id}`,
@@ -114,7 +143,7 @@ const latest: Latest[] = [
   .sort((a, b) => b.date.valueOf() - a.date.valueOf())
   .slice(0, 6);
 
-const everything = [...papers, ...writeups, ...competitions, ...projects, ...notes];
+const everything = [...posts, ...cheatsheets, ...papers, ...writeups, ...competitions, ...projects, ...notes];
 const topTags = tagCounts(everything as { data: { tags?: string[] } }[]).slice(0, 6).map(([t]) => t);
 
 const socials = [
@@ -152,7 +181,7 @@ const socials = [
       }
 
       <div class="hero__ctas">
-        <a class="btn btn--primary btn--lg" href="/notes">
+        <a class="btn btn--primary btn--lg" href={posts.length ? '/posts' : '/notes'}>
           Boot Sequence <Icon name="arrowRight" size={20} />
         </a>
         <a class="btn btn--lg" href="/about">
@@ -187,10 +216,10 @@ const socials = [
       <div class="band-head" data-reveal>
         <div>
           <h2 class="band-title">Incoming Transmissions</h2>
-          <p class="band-sub">Recent writeups, deep dives, reading notes and projects.</p>
+          <p class="band-sub">Recent posts, study notes and cheatsheets on malware analysis.</p>
         </div>
-        <a class="arrow-link" href="/notes">
-          Read all notes <Icon name="arrowRight" />
+        <a class="arrow-link" href={posts.length ? '/posts' : '/notes'}>
+          {posts.length ? 'Read all posts' : 'Read all notes'} <Icon name="arrowRight" />
         </a>
       </div>
 
@@ -208,6 +237,8 @@ const socials = [
                 label={item.label}
                 labelClass={item.labelClass}
                 meta={item.meta}
+                level={item.level}
+                series={item.series}
               />
             ))}
           </div>
@@ -244,7 +275,7 @@ const socials = [
       <div class="connect__icon"><Icon name="network" size={32} /></div>
       <h2 class="band-title">Establish Connection</h2>
       <p class="band-sub">
-        Want to team up for a CTF, talk about a paper, or discuss detection engineering? My comms are open.
+        Looking for a malware analysis intern, want to swap notes on a sample, or team up for a CTF? My comms are open.
       </p>
       <a class="btn btn--invert btn--xl" href={`mailto:${SITE.author.email}`}>
         <Icon name="mail" size={20} /> Initialize Contact

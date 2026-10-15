@@ -1,11 +1,13 @@
 ---
 import Icon from './Icon.astro';
+import { LEVELS } from '../lib/content';
 
 /**
- * Search box + toggleable filter chips over a grid of PostCards.
- * Each card carries `data-search` (lower-cased text) and `data-chips`
- * (space-separated values); the script below hides what doesn't match.
- * Without JavaScript every card is simply shown.
+ * Search box + level filter + sort + toggleable chips over a grid of PostCards.
+ * Each card carries `data-search` (lower-cased text), `data-chips`
+ * (space-separated values), `data-level` (0-3) and `data-date` (ms); the
+ * script below hides and re-orders cards. Without JavaScript every card is
+ * simply shown, newest first.
  */
 interface Props {
   /** Singular / plural noun for the count line: ['writeup', 'writeups']. */
@@ -15,9 +17,13 @@ interface Props {
   /** Label on the button that reveals the chips. */
   chipsLabel?: string;
   total: number;
+  /** Show the level buttons and the easy/hard sort. */
+  levels?: boolean;
+  /** How many cards sit at each level, for the button counts. */
+  levelCounts?: Record<string, number>;
 }
 
-const { noun, chips, chipsLabel = 'tags', total } = Astro.props;
+const { noun, chips, chipsLabel = 'tags', total, levels = false, levelCounts = {} } = Astro.props;
 ---
 
 <div class="filterable" data-filterable data-singular={noun[0]} data-plural={noun[1]}>
@@ -29,6 +35,21 @@ const { noun, chips, chipsLabel = 'tags', total } = Astro.props;
     </label>
 
     {
+      levels && (
+        <label class="sort">
+          <span class="visually-hidden">Sort</span>
+          <select data-sort>
+            <option value="new">Newest first</option>
+            <option value="old">Oldest first</option>
+            <option value="easy">Level: easy → hard</option>
+            <option value="hard">Level: hard → easy</option>
+          </select>
+          <Icon name="chevronDown" class="sort__chev" />
+        </label>
+      )
+    }
+
+    {
       chips.length > 0 && (
         <button class="btn btn--sm" type="button" aria-expanded="false" data-chips-toggle>
           <Icon name="tag" />
@@ -38,6 +59,26 @@ const { noun, chips, chipsLabel = 'tags', total } = Astro.props;
       )
     }
   </div>
+
+  {
+    levels && (
+      <div class="level-row" role="group" aria-label="Filter by level">
+        <button class="level-btn" type="button" data-level-btn="0" aria-pressed="true">
+          All levels <span class="level-btn__n">{total}</span>
+        </button>
+        {LEVELS.map((l) => (
+          <button class={`level-btn level-btn--${l.value}`} type="button" data-level-btn={l.rank} aria-pressed="false">
+            <svg class="level__bars" viewBox="0 0 14 12" width="14" height="12" aria-hidden="true">
+              <rect x="0" y="8" width="3" height="4" rx="1" class="on" />
+              <rect x="5.5" y="4" width="3" height="8" rx="1" class:list={[l.rank >= 2 && 'on']} />
+              <rect x="11" y="0" width="3" height="12" rx="1" class:list={[l.rank >= 3 && 'on']} />
+            </svg>
+            {l.label} <span class="level-btn__n">{levelCounts[l.value] ?? 0}</span>
+          </button>
+        ))}
+      </div>
+    )
+  }
 
   {
     chips.length > 0 && (
@@ -63,17 +104,22 @@ const { noun, chips, chipsLabel = 'tags', total } = Astro.props;
   <div class="no-results" data-filter-none hidden>
     <Icon name="search" size={48} />
     <h3>No {noun[1]} found</h3>
-    <p>Try a different search, or clear the selected tag.</p>
+    <p>Try a different search, level or tag.</p>
   </div>
 </div>
 
 <script>
+  const LEVEL_NAMES = ['', 'beginner', 'intermediate', 'advanced'];
+
   document.querySelectorAll<HTMLElement>('[data-filterable]').forEach((root) => {
     const input = root.querySelector<HTMLInputElement>('[data-filter-input]');
+    const sort = root.querySelector<HTMLSelectElement>('[data-sort]');
     const toggle = root.querySelector<HTMLButtonElement>('[data-chips-toggle]');
     const toggleLabel = root.querySelector<HTMLElement>('[data-chips-toggle-label]');
     const chipRow = root.querySelector<HTMLElement>('[data-chips]');
     const chips = [...root.querySelectorAll<HTMLButtonElement>('[data-chip]')];
+    const levelBtns = [...root.querySelectorAll<HTMLButtonElement>('[data-level-btn]')];
+    const grid = root.querySelector<HTMLElement>('[data-filter-grid]');
     const cards = [...root.querySelectorAll<HTMLElement>('[data-filter-grid] [data-search]')];
     const count = root.querySelector<HTMLElement>('[data-filter-count]');
     const none = root.querySelector<HTMLElement>('[data-filter-none]');
@@ -81,6 +127,27 @@ const { noun, chips, chipsLabel = 'tags', total } = Astro.props;
     const plural = root.dataset.plural ?? 'items';
 
     let chip = '';
+    let level = 0;
+
+    const num = (el: HTMLElement, key: string) => Number(el.dataset[key] ?? 0);
+
+    const reorder = () => {
+      if (!grid || !sort) return;
+      const mode = sort.value;
+      const byDate = (a: HTMLElement, b: HTMLElement) => num(b, 'date') - num(a, 'date');
+      const sorted = [...cards].sort((a, b) => {
+        if (mode === 'old') return -byDate(a, b);
+        if (mode === 'easy' || mode === 'hard') {
+          // Unrated notes always go last, whichever way we sort.
+          const la = num(a, 'level') || 99;
+          const lb = num(b, 'level') || 99;
+          if (la === 99 || lb === 99) return la - lb || byDate(a, b);
+          return (mode === 'easy' ? la - lb : lb - la) || byDate(a, b);
+        }
+        return byDate(a, b);
+      });
+      sorted.forEach((card) => grid.appendChild(card));
+    };
 
     const apply = () => {
       const q = (input?.value ?? '').trim().toLowerCase();
@@ -88,7 +155,8 @@ const { noun, chips, chipsLabel = 'tags', total } = Astro.props;
       for (const card of cards) {
         const textOk = !q || (card.dataset.search ?? '').includes(q);
         const chipOk = !chip || (card.dataset.chips ?? '').split(' ').includes(chip);
-        card.hidden = !(textOk && chipOk);
+        const levelOk = !level || num(card, 'level') === level;
+        card.hidden = !(textOk && chipOk && levelOk);
         if (!card.hidden) shown++;
       }
       if (count) {
@@ -97,6 +165,7 @@ const { noun, chips, chipsLabel = 'tags', total } = Astro.props;
           shown === total
             ? `Showing all ${total} ${total === 1 ? singular : plural}`
             : `Showing ${shown} of ${total} ${plural}`;
+        if (level) line += ` at ${LEVEL_NAMES[level]} level`;
         if (q) line += ` for "${q}"`;
         if (chip) line += ` tagged "${chip}"`;
         count.textContent = line;
@@ -105,6 +174,7 @@ const { noun, chips, chipsLabel = 'tags', total } = Astro.props;
     };
 
     input?.addEventListener('input', apply);
+    sort?.addEventListener('change', reorder);
 
     toggle?.addEventListener('click', () => {
       const open = toggle.getAttribute('aria-expanded') === 'true';
@@ -121,5 +191,24 @@ const { noun, chips, chipsLabel = 'tags', total } = Astro.props;
         apply();
       });
     });
+
+    levelBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const value = Number(btn.dataset.levelBtn ?? 0);
+        level = level === value ? 0 : value;
+        levelBtns.forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.levelBtn) === level)));
+        apply();
+      });
+    });
+
+    // ?level=advanced or ?sort=hard in the URL pre-selects the filter.
+    const params = new URLSearchParams(location.search);
+    const wantLevel = LEVEL_NAMES.indexOf(params.get('level') ?? '');
+    if (wantLevel > 0) levelBtns.find((b) => Number(b.dataset.levelBtn) === wantLevel)?.click();
+    const wantSort = params.get('sort');
+    if (sort && wantSort && [...sort.options].some((o) => o.value === wantSort)) {
+      sort.value = wantSort;
+      reorder();
+    }
   });
 </script>

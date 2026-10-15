@@ -1,6 +1,9 @@
 import { defineCollection, z } from 'astro:content';
 import { glob } from 'astro/loaders';
 
+/** How hard a piece is to follow. Drives the level filter and sort. */
+const level = z.enum(['beginner', 'intermediate', 'advanced']).optional();
+
 /** Fields every publishable note shares. */
 const common = {
   title: z.string(),
@@ -92,11 +95,41 @@ const notes = defineCollection({
   loader: glob({ base: './src/content/notes', pattern: '**/*.{md,mdx}' }),
   schema: z.object({
     ...common,
-    /** web, crypto, forensics, linux, network... free-form on purpose. */
+    /** malware, reverse, windows, web, crypto, network... free-form on purpose. */
     topic: z.string().optional(),
     /** "reflex" = a short first-moves checklist. "deep-dive" = the long form. */
     kind: z.enum(['reflex', 'deep-dive', 'note']).default('note'),
+    level,
+    /** Where the material came from: course, book, lab, video, reading… */
+    type: z.string().optional(),
+    /** The book / course / talk the note is built on. */
+    reference: z.string().optional(),
   }),
 });
 
-export const collections = { papers, writeups, competitions, projects, notes };
+// --- Blog posts: the long-form articles, optionally in a numbered series -----
+const posts = defineCollection({
+  loader: glob({ base: './src/content/posts', pattern: '**/*.{md,mdx}' }),
+  schema: z.object({
+    ...common,
+    level,
+    topic: z.string().optional(),
+    /** "Malware Analysis 101" — posts sharing this string form a series. */
+    series: z.string().optional(),
+    seriesOrder: z.number().optional(),
+    /** Image in public/ (or synced from the vault) shown on the card and page. */
+    banner: z.string().optional(),
+  }),
+});
+
+// --- Cheatsheets: one-page command / API references ------------------------
+const cheatsheets = defineCollection({
+  loader: glob({ base: './src/content/cheatsheets', pattern: '**/*.{md,mdx}' }),
+  schema: z.object({
+    ...common,
+    level,
+    topic: z.string().optional(),
+  }),
+});
+
+export const collections = { posts, notes, cheatsheets, papers, writeups, competitions, projects };

@@ -1,0 +1,25 @@
+---
+import { levelRank, levelLabel } from '../lib/content';
+
+/** Three signal bars, filled up to the level: ▂ ▄ ▆ */
+interface Props {
+  level: string;
+}
+
+const { level } = Astro.props;
+const rank = levelRank(level);
+const label = levelLabel(level);
+---
+
+{
+  rank > 0 && (
+    <span class={`level level--${level}`} title={`Level: ${label}`}>
+      <svg class="level__bars" viewBox="0 0 14 12" width="14" height="12" aria-hidden="true">
+        <rect x="0" y="8" width="3" height="4" rx="1" class:list={[rank >= 1 && 'on']} />
+        <rect x="5.5" y="4" width="3" height="8" rx="1" class:list={[rank >= 2 && 'on']} />
+        <rect x="11" y="0" width="3" height="12" rx="1" class:list={[rank >= 3 && 'on']} />
+      </svg>
+      {label}
+    </span>
+  )
+}
