@@ -5,7 +5,14 @@
  * library ships to the browser.
  */
 
-export type Section = 'writeups' | 'papers' | 'notes' | 'projects' | 'competitions';
+export type Section =
+  | 'posts'
+  | 'notes'
+  | 'cheatsheets'
+  | 'writeups'
+  | 'papers'
+  | 'projects'
+  | 'competitions';
 
 /**
  * Categorical slots, assigned to the ENTITY and never cycled — writeups are
@@ -20,6 +27,8 @@ export type Section = 'writeups' | 'papers' | 'notes' | 'projects' | 'competitio
  * relief rule applies — every chart here ships direct labels and a table view.
  */
 export const SERIES: Record<Section, { slot: number; label: string; href: string }> = {
+  posts:        { slot: 6, label: 'Posts',        href: '/posts' },
+  cheatsheets:  { slot: 7, label: 'Cheatsheets',  href: '/cheatsheets' },
   writeups:     { slot: 1, label: 'Writeups',     href: '/writeups' },
   papers:       { slot: 2, label: 'Papers',       href: '/papers' },
   notes:        { slot: 3, label: 'Notes',        href: '/notes' },
@@ -28,7 +37,7 @@ export const SERIES: Record<Section, { slot: number; label: string; href: string
 };
 
 /** Draw order = slot order, so stacks are consistent across every column. */
-export const SECTION_ORDER: Section[] = ['writeups', 'papers', 'notes', 'projects', 'competitions'];
+export const SECTION_ORDER: Section[] = ['posts', 'notes', 'cheatsheets', 'writeups', 'papers', 'projects', 'competitions'];
 
 export type Bucket = {
   key: string;        // "2026-08"
@@ -53,7 +62,7 @@ export function monthBuckets(
       key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
       label: d.toLocaleDateString('en-GB', { month: 'short' }),
       year: d.getFullYear(),
-      counts: { writeups: 0, papers: 0, notes: 0, projects: 0, competitions: 0 },
+      counts: { posts: 0, notes: 0, cheatsheets: 0, writeups: 0, papers: 0, projects: 0, competitions: 0 },
       total: 0,
     });
   }

@@ -2,11 +2,18 @@
 /**
  * sync-vault.mjs — copy opt-in notes from the Obsidian vault into src/content/.
  *
- * A note is published ONLY if its frontmatter says so:
+ * Two rules decide what goes public:
  *
- *     ---
- *     published: true
- *     ---
+ *   - Anything inside Website/Posts, Website/Notes or Website/Cheatsheets is
+ *     published — that folder exists to be published. Opt a file out with
+ *     `published: false`, or keep it local-only with `draft: true`.
+ *
+ *   - Everywhere else in the vault (CTF/, Recherche/, Projets/, explanations/)
+ *     a note is published ONLY if its frontmatter says so:
+ *
+ *         ---
+ *         published: true
+ *         ---
  *
  * Nothing else leaves the vault. Everything under src/content/ is regenerated
  * on every run, so deleting `published: true` un-publishes the note.
@@ -25,12 +32,25 @@ import matter from 'gray-matter';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 
-const VAULT =
-  process.env.VAULT ??
-  path.resolve(process.env.USERPROFILE ?? process.env.HOME ?? '', 'OneDrive/Desktop/study 2eme');
+/** The site code lives inside the vault (Website/.site), so walk up to the
+ *  first folder that has an .obsidian/ directory. */
+function findVault(start) {
+  let dir = start;
+  for (;;) {
+    if (fs.existsSync(path.join(dir, '.obsidian'))) return dir;
+    const up = path.dirname(dir);
+    if (up === dir) return null;
+    dir = up;
+  }
+}
 
-/** Vault folder -> content collection. First match wins. */
+const VAULT = process.env.VAULT ?? findVault(ROOT) ?? path.resolve(ROOT, '..', '..');
+
+/** Vault folder -> content collection. `auto` = published unless told not to. */
 const SOURCES = [
+  { dir: 'Website/Posts', collection: 'posts', auto: true },
+  { dir: 'Website/Notes', collection: 'notes', auto: true },
+  { dir: 'Website/Cheatsheets', collection: 'cheatsheets', auto: true },
   { dir: 'Recherche/02-Notes-de-Lecture', collection: 'papers' },
   { dir: 'Recherche/03-Mon-Papier', collection: 'papers' },
   { dir: 'CTF/01-Writeups', collection: 'writeups' },
@@ -42,7 +62,7 @@ const SOURCES = [
   { dir: 'Notes', collection: 'notes' },
 ];
 
-const COLLECTIONS = ['papers', 'writeups', 'competitions', 'projects', 'notes'];
+const COLLECTIONS = ['posts', 'notes', 'cheatsheets', 'papers', 'writeups', 'competitions', 'projects'];
 
 /** Never publish these, whatever the frontmatter says. */
 const SKIP_NAMES = [/^README\.md$/i, /^TEMPLATE/i, /^Template-/i, /^_/, /^\./];
@@ -101,7 +121,46 @@ const KEY_ALIASES = {
   domaine: 'topic',
   domain: 'topic',
   sujet: 'topic',
+  serie: 'series',
+  'série': 'series',
+  partie: 'seriesOrder',
+  part: 'seriesOrder',
+  ordre: 'seriesOrder',
+  'series-order': 'seriesOrder',
+  seriesorder: 'seriesOrder',
+  'référence': 'reference',
+  ressource: 'reference',
+  source: 'reference',
+  livre: 'reference',
+  cours: 'reference',
+  banniere: 'banner',
+  'bannière': 'banner',
 };
+
+/** Levels for posts / notes / cheatsheets — French, English or 1-3. */
+const LEVEL = {
+  beginner: 'beginner',
+  debutant: 'beginner',
+  'débutant': 'beginner',
+  easy: 'beginner',
+  facile: 'beginner',
+  1: 'beginner',
+  intermediate: 'intermediate',
+  intermediaire: 'intermediate',
+  'intermédiaire': 'intermediate',
+  medium: 'intermediate',
+  moyen: 'intermediate',
+  2: 'intermediate',
+  advanced: 'advanced',
+  avance: 'advanced',
+  'avancé': 'advanced',
+  hard: 'advanced',
+  difficile: 'advanced',
+  expert: 'advanced',
+  3: 'advanced',
+};
+
+const toLevel = (fm) => LEVEL[String(fm.level ?? fm.difficulty ?? '').trim().toLowerCase()];
 
 const DIFFICULTY = {
   facile: 'easy',
@@ -278,6 +337,11 @@ function cleanTags(raw) {
 }
 
 function buildFrontmatter(collection, fm, file, sourceRel) {
+  // A template copied by hand still says "{{title}}" — treat that as unset.
+  for (const key of ['title', 'date', 'summary']) {
+    if (typeof fm[key] === 'string' && fm[key].includes('{{')) delete fm[key];
+  }
+
   const title =
     fm.title ??
     fm.event ??
@@ -359,10 +423,32 @@ function buildFrontmatter(collection, fm, file, sourceRel) {
     };
   }
 
+  if (collection === 'posts') {
+    return {
+      ...base,
+      level: toLevel(fm),
+      topic: fm.topic ?? fm.category ? String(fm.topic ?? fm.category).toLowerCase() : undefined,
+      series: fm.series ? String(fm.series).trim() : undefined,
+      seriesOrder: toNumber(fm.seriesOrder),
+      banner: fm.banner ? String(fm.banner) : undefined,
+    };
+  }
+
+  if (collection === 'cheatsheets') {
+    return {
+      ...base,
+      level: toLevel(fm),
+      topic: fm.topic ?? fm.category ? String(fm.topic ?? fm.category).toLowerCase() : undefined,
+    };
+  }
+
   if (collection === 'notes') {
     const name = path.basename(file, '.md');
     return {
       ...base,
+      level: toLevel(fm),
+      type: fm.type ? String(fm.type).toLowerCase() : undefined,
+      reference: fm.reference ? String(fm.reference) : undefined,
       topic: fm.topic
         ? (CATEGORY[String(fm.topic).toLowerCase()] ?? String(fm.topic).toLowerCase())
         : undefined,
@@ -451,7 +537,7 @@ function main() {
 
   // Pass 1 — find everything marked published, so wikilinks can resolve.
   const candidates = [];
-  for (const { dir, collection } of SOURCES) {
+  for (const { dir, collection, auto } of SOURCES) {
     const abs = path.join(VAULT, dir);
     for (const file of walk(abs)) {
       const name = path.basename(file);
@@ -466,7 +552,9 @@ function main() {
       }
 
       const fm = normalizeKeys(parsed.data ?? {});
-      if (!truthy(fm.published)) continue;
+      // In Website/ everything goes out unless it says `published: false`.
+      const optedOut = fm.published === false || /^(false|no|non|0)$/i.test(String(fm.published ?? ''));
+      if (auto ? optedOut : !truthy(fm.published)) continue;
 
       const slug = slugify(fm.slug ?? path.basename(file, '.md'));
       candidates.push({ file, collection, fm, body: parsed.content, slug, dir });
@@ -493,7 +581,7 @@ function main() {
   }
 
   // Pass 2 — write.
-  const counts = { papers: 0, writeups: 0, competitions: 0, projects: 0, notes: 0 };
+  const counts = Object.fromEntries(COLLECTIONS.map((c) => [c, 0]));
   const seen = new Set();
   let blocked = 0;
 
@@ -530,7 +618,7 @@ function main() {
 
   if (total === 0) {
     console.log(
-      `\n  Nothing to publish yet. Add this to a note's frontmatter:\n` +
+      `\n  Nothing to publish yet. Write in Website/Posts or Website/Notes, or add this to a note:\n` +
         `\n      ---\n      published: true\n      ---\n`
     );
   }

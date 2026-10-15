@@ -1,6 +1,7 @@
 ---
 import Icon from './Icon.astro';
-import { formatDate, isoDate, slugifyTag } from '../lib/content';
+import LevelBadge from './LevelBadge.astro';
+import { formatDate, isoDate, slugifyTag, levelRank } from '../lib/content';
 
 /**
  * One card shape for every section. Pages pass what they have; anything
@@ -25,6 +26,12 @@ interface Props {
   /** Space-separated values the list filter matches chips against. */
   chips?: string;
   tagLimit?: number;
+  /** beginner / intermediate / advanced — shown as a badge, used by the level filter. */
+  level?: string;
+  /** "Series name · Part 2" line. */
+  series?: string;
+  /** Image shown across the top of the card. */
+  banner?: string;
 }
 
 const {
@@ -41,14 +48,24 @@ const {
   linkTags = true,
   chips = '',
   tagLimit = 3,
+  level,
+  series,
+  banner,
 } = Astro.props;
 
 const shown = tags.slice(0, tagLimit);
 const hidden = tags.length - shown.length;
-const search = [title, summary, meta, label, ...tags].filter(Boolean).join(' ').toLowerCase();
+const search = [title, summary, meta, label, series, level, ...tags].filter(Boolean).join(' ').toLowerCase();
 ---
 
-<article class="post-card" data-search={search} data-chips={chips}>
+<article
+  class:list={['post-card', banner && 'post-card--banner']}
+  data-search={search}
+  data-chips={chips}
+  data-level={levelRank(level)}
+  data-date={date.valueOf()}
+>
+  {banner && <img class="post-card__banner" src={banner} alt="" loading="lazy" decoding="async" />}
   <div class="post-card__meta">
     <span class="post-card__when">
       <Icon name="calendar" size={14} />
@@ -64,14 +81,16 @@ const search = [title, summary, meta, label, ...tags].filter(Boolean).join(' ').
     }
   </div>
 
-  {(label || draft) && (
+  {(label || draft || level) && (
     <div class="post-card__labels">
+      {level && <LevelBadge level={level} />}
       {label && <span class:list={['tag', labelClass]}>{label}</span>}
       {draft && <span class="badge badge--warn">draft</span>}
     </div>
   )}
 
   <h3 class="post-card__title"><a href={href}>{title}</a></h3>
+  {series && <p class="post-card__series">{series}</p>}
   {meta && <p class="post-card__sub">{meta}</p>}
   {summary && <p class="post-card__body">{summary}</p>}
   <slot />

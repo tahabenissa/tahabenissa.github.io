@@ -1,0 +1,55 @@
+---
+import Base from '../../layouts/Base.astro';
+import PageHero from '../../components/PageHero.astro';
+import PostCard from '../../components/PostCard.astro';
+import Filterable from '../../components/Filterable.astro';
+import { loadCollection, chipList, chipAttr, levelCounts } from '../../lib/content';
+
+const sheets = await loadCollection('cheatsheets');
+const chips = chipList(sheets.map((c) => [c.data.topic ?? '', ...c.data.tags]));
+---
+
+<Base
+  title="Cheatsheets"
+  description="One-page references for malware analysis tools, Windows APIs and reverse-engineering workflows."
+  bare
+>
+  <PageHero
+    lead="Quick"
+    accent="Cheatsheets"
+    subtitle="One-page references for the tools and APIs I reach for while analysing a sample."
+  />
+
+  <div class="wrap page-body">
+    {
+      sheets.length === 0 ? (
+        <p class="empty">
+          No cheatsheets yet. Write one in <code>Website/Cheatsheets/</code> and run
+          <code>npm run publish</code>.
+        </p>
+      ) : (
+        <Filterable
+          noun={['cheatsheet', 'cheatsheets']}
+          chips={chips}
+          total={sheets.length}
+          levels
+          levelCounts={levelCounts(sheets)}
+        >
+          {sheets.map((c) => (
+            <PostCard
+              href={`/cheatsheets/${c.id}`}
+              title={c.data.title}
+              date={c.data.date}
+              summary={c.data.summary}
+              tags={c.data.tags}
+              level={c.data.level}
+              label={c.data.topic}
+              draft={c.data.draft}
+              chips={chipAttr([c.data.topic, ...c.data.tags])}
+            />
+          ))}
+        </Filterable>
+      )
+    }
+  </div>
+</Base>

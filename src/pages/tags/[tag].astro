@@ -17,6 +17,8 @@ type Item = {
 // only use its own local scope and imports — no module-level helpers here.
 export async function getStaticPaths() {
   const sections: [string, string][] = [
+    ['posts', 'post'],
+    ['cheatsheets', 'cheatsheet'],
     ['papers', 'paper'],
     ['writeups', 'writeup'],
     ['competitions', 'competition'],
@@ -67,7 +69,7 @@ const { label, items } = Astro.props as { label: string; items: Item[] };
   <PageHero
     lead="#"
     accent={label}
-    subtitle={`${items.length} ${items.length === 1 ? 'entry' : 'entries'} across papers, writeups, competitions, projects and notes.`}
+    subtitle={`${items.length} ${items.length === 1 ? 'entry' : 'entries'} across the site.`}
   >
     <p class="page-hero__back"><a class="arrow-link" href="/tags">&larr; All tags</a></p>
   </PageHero>

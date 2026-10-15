@@ -5,6 +5,8 @@ import PageHero from '../../components/PageHero.astro';
 import { visible, tagCounts, slugifyTag } from '../../lib/content';
 
 const collections = await Promise.all([
+  getCollection('posts'),
+  getCollection('cheatsheets'),
   getCollection('papers'),
   getCollection('writeups'),
   getCollection('competitions'),

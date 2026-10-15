@@ -8,9 +8,18 @@ Built with [Astro](https://astro.build). No CMS, no database, no runtime.
 
 ---
 
+## Where this lives
+
+This repo is cloned at `Website/.site` inside the Obsidian vault (`D:study 2eme`). The dot
+keeps Obsidian from indexing the code and `node_modules`. The sync script finds the vault by
+walking up to the first folder with an `.obsidian/` directory.
+
 ## The one thing to remember
 
-**A note goes public only when its frontmatter says so.**
+**Everything in `Website/Posts`, `Website/Notes` and `Website/Cheatsheets` is published.**
+Hold a file back with `draft: true` (dev only) or `published: false`.
+
+**Anywhere else in the vault, a note goes public only when its frontmatter says so.**
 
 ```yaml
 ---
@@ -50,6 +59,9 @@ Drafts (`draft: true`) are visible in `npm run dev` and hidden in the built site
 
 | Vault folder | Becomes | URL |
 |---|---|---|
+| `Website/Posts/` (auto) | Posts | `/posts/…` |
+| `Website/Notes/` (auto) | Notes | `/notes/…` |
+| `Website/Cheatsheets/` (auto) | Cheatsheets | `/cheatsheets/…` |
 | `Recherche/02-Notes-de-Lecture/` | Papers | `/papers/…` |
 | `Recherche/03-Mon-Papier/` | Papers | `/papers/…` |
 | `CTF/01-Writeups/` | Writeups | `/writeups/…` |
@@ -84,6 +96,18 @@ modification time, so old notes don't jump to the top every time you sync.
 
 The templates in your vault (`CTF/05-Templates/`, `Recherche/02-Notes-de-Lecture/TEMPLATE-*`,
 `Projets/Template-Projet.md`) already carry every field the site reads, commented.
+
+### Levels
+
+Posts, notes and cheatsheets take `level:` (or `niveau:`): `beginner` / `intermediate` /
+`advanced`, `débutant` / `intermédiaire` / `avancé`, `facile` / `moyen` / `difficile`, or
+`1` / `2` / `3`. The index pages filter by level and sort easy → hard or hard → easy;
+`/notes?level=advanced` and `/notes?sort=hard` link straight to a filtered view.
+
+### Series
+
+Posts sharing `series:` (or `serie:`) are linked: each shows the list of parts and
+Previous / Next. Order them with `seriesOrder:` (or `partie:`).
 
 ### Competition ranks
 

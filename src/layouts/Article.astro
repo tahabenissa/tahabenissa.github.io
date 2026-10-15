@@ -2,6 +2,7 @@
 import type { MarkdownHeading } from 'astro';
 import Base from './Base.astro';
 import Icon from '../components/Icon.astro';
+import LevelBadge from '../components/LevelBadge.astro';
 import { formatDate, isoDate, slugifyTag } from '../lib/content';
 
 /**
@@ -29,6 +30,9 @@ interface Props {
   headings?: MarkdownHeading[];
   /** Small labels in the meta row. */
   badges?: { text: string; class?: string }[];
+  level?: string;
+  /** Wide image above the body. */
+  banner?: string;
 }
 
 const {
@@ -44,6 +48,8 @@ const {
   tags = [],
   headings = [],
   badges = [],
+  level,
+  banner,
 } = Astro.props;
 
 const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
@@ -74,6 +80,7 @@ const hasToc = toc.filter((h) => h.depth === 2).length >= 2;
             </span>
           )
         }
+        {level && <LevelBadge level={level} />}
         {badges.map((b) => <span class:list={[b.class ?? 'tag']}>{b.text}</span>)}
       </div>
       {
@@ -90,6 +97,7 @@ const hasToc = toc.filter((h) => h.depth === 2).length >= 2;
 
   <div class:list={['wrap', 'article-layout', hasToc && 'article-layout--toc']}>
     <div class="article-main">
+      {banner && <img class="article-banner" src={banner} alt="" />}
       {summary && <p class="lede article-lede">{summary}</p>}
       <slot name="before" />
       <article class="prose">

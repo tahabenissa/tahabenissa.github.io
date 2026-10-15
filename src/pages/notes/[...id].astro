@@ -20,17 +20,26 @@ const kind = d.kind === 'deep-dive' ? 'deep dive' : d.kind;
   title={d.title}
   description={d.summary ?? `Note: ${d.title}`}
   section={{ label: 'Notes', href: '/notes' }}
-  crumb={kind}
+  crumb={d.type ?? kind}
   date={d.date}
   updated={d.updated}
   readingTime={readingTime(entry.body)}
   summary={d.summary}
   tags={d.tags}
   headings={headings}
+  level={d.level}
   badges={[
     ...(d.topic ? [{ text: d.topic, class: `tag cat cat-${d.topic}` }] : []),
     ...(d.draft ? [{ text: 'draft', class: 'badge badge--warn' }] : []),
   ]}
 >
+  {
+    d.reference && (
+      <div slot="before" class="callout callout--plain">
+        <p class="callout__title">Source</p>
+        <p style="margin:0">{d.reference}</p>
+      </div>
+    )
+  }
   <Content />
 </Article>

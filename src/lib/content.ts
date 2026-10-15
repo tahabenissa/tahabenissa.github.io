@@ -15,7 +15,16 @@ export function byDateDesc<T extends Dated>(a: T, b: T): number {
 }
 
 /** getCollection + drafts filtered + newest first. Use this everywhere. */
-export async function loadCollection<C extends 'papers' | 'writeups' | 'competitions' | 'projects' | 'notes'>(
+export type CollectionName =
+  | 'posts'
+  | 'notes'
+  | 'cheatsheets'
+  | 'papers'
+  | 'writeups'
+  | 'competitions'
+  | 'projects';
+
+export async function loadCollection<C extends CollectionName>(
   name: C
 ): Promise<CollectionEntry<C>[]> {
   const entries = await getCollection(name);
@@ -123,4 +132,46 @@ export function chipList(values: string[][]): { value: string; label: string }[]
 /** The matching `data-chips` string for one entry. */
 export function chipAttr(values: (string | undefined)[]): string {
   return values.filter((v): v is string => !!v).map(slugifyTag).filter(Boolean).join(' ');
+}
+
+// ---------------------------------------------------------------------------
+// Levels
+// ---------------------------------------------------------------------------
+
+export type Level = 'beginner' | 'intermediate' | 'advanced';
+
+export const LEVELS: { value: Level; label: string; rank: number }[] = [
+  { value: 'beginner', label: 'Beginner', rank: 1 },
+  { value: 'intermediate', label: 'Intermediate', rank: 2 },
+  { value: 'advanced', label: 'Advanced', rank: 3 },
+];
+
+/** 1 / 2 / 3 for sorting easy -> hard; 0 when the note has no level. */
+export function levelRank(level?: string): number {
+  return LEVELS.find((l) => l.value === level)?.rank ?? 0;
+}
+
+export function levelLabel(level?: string): string | undefined {
+  return LEVELS.find((l) => l.value === level)?.label;
+}
+
+/** Posts sharing a series, in reading order. */
+export function seriesOf<T extends { data: { series?: string; seriesOrder?: number; date: Date } }>(
+  all: T[],
+  series: string
+): T[] {
+  return all
+    .filter((p) => p.data.series === series)
+    .sort(
+      (a, b) =>
+        (a.data.seriesOrder ?? Infinity) - (b.data.seriesOrder ?? Infinity) ||
+        a.data.date.valueOf() - b.data.date.valueOf()
+    );
+}
+
+/** { beginner: 3, intermediate: 1, advanced: 0 } for the level buttons. */
+export function levelCounts(entries: { data: { level?: string } }[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const e of entries) if (e.data.level) out[e.data.level] = (out[e.data.level] ?? 0) + 1;
+  return out;
 }

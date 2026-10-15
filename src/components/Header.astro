@@ -1,12 +1,24 @@
 ---
 import { SITE } from '../config';
 import Icon from './Icon.astro';
+import { loadCollection, type CollectionName } from '../lib/content';
 
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 
 /** '/papers/foo' should still light up the Papers link. */
 const isCurrent = (href: string) =>
   href === '/' ? path === '/' : path === href || path.startsWith(href + '/');
+
+/** Hide sections that have nothing published yet. */
+const nav = (
+  await Promise.all(
+    SITE.nav.map(async (item) => {
+      if (!('collection' in item)) return item;
+      const entries = await loadCollection(item.collection as CollectionName);
+      return entries.length > 0 ? item : null;
+    })
+  )
+).filter((item) => item !== null);
 ---
 
 <header class="site-header">
@@ -20,7 +32,7 @@ const isCurrent = (href: string) =>
 
     <nav class="nav" aria-label="Main">
       {
-        SITE.nav.map((item) => (
+        nav.map((item) => (
           <a href={item.href} aria-current={isCurrent(item.href) ? 'page' : undefined}>
             {item.label}
           </a>
@@ -51,7 +63,7 @@ const isCurrent = (href: string) =>
 
   <nav class="mobile-nav wrap" id="mobile-nav" aria-label="Main" hidden>
     {
-      SITE.nav.map((item) => (
+      nav.map((item) => (
         <a href={item.href} aria-current={isCurrent(item.href) ? 'page' : undefined}>
           {item.label}
         </a>

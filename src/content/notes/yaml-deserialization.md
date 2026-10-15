@@ -32,7 +32,7 @@ Here's the trap: some tools that read YAML don't just rebuild data. They also ac
 
 So the bug is not in YAML itself. The bug is that the server trusts text coming from the outside and lets that text **choose which code to run**.
 
-**The analogy:** picture an administrative form where you normally fill in "Name: Taha, City: Rabat". The office reads it and files it. Now imagine the form also accepts a magic box: "Special instruction for the clerk to carry out." An attacker writes in it "Open the safe and hand me the cash." A naive clerk, trained to *obey whatever the form says*, does it. The form (YAML) isn't guilty; it's the clerk blindly obeying an order from a stranger.
+**The analogy:** picture an administrative form where you normally fill in "Name: Taha, City: Tunis". The office reads it and files it. Now imagine the form also accepts a magic box: "Special instruction for the clerk to carry out." An attacker writes in it "Open the safe and hand me the cash." A naive clerk, trained to *obey whatever the form says*, does it. The form (YAML) isn't guilty; it's the clerk blindly obeying an order from a stranger.
 
 **In one sentence:** deserializing untrusted YAML with a "powerful" parser means letting a stranger choose which code your server executes.
 
