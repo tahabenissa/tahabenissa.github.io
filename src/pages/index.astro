@@ -1,10 +1,10 @@
 ---
 import Base from '../layouts/Base.astro';
-import Tags from '../components/Tags.astro';
-import { SITE } from '../config';
-import Portrait from '../components/Portrait.astro';
+import Icon from '../components/Icon.astro';
+import PostCard from '../components/PostCard.astro';
 import Dashboard from '../components/Dashboard.astro';
-import { loadCollection, formatDate, formatMonth, rankClass, ordinal, topPercent, tagCounts } from '../lib/content';
+import { SITE } from '../config';
+import { loadCollection, readingTime, tagCounts, slugifyTag, ordinal, topPercent } from '../lib/content';
 
 const [papers, writeups, competitions, projects, notes] = await Promise.all([
   loadCollection('papers'),
@@ -42,192 +42,252 @@ const compRows = competitions.map((c) => ({
   totalTeams: c.data.totalTeams,
 }));
 
-/** Featured projects first, then most recent. */
-const shownProjects = [...projects].sort(
-  (a, b) => Number(b.data.featured) - Number(a.data.featured)
-).slice(0, 4);
+/** The "latest" grid: every section in one stream, newest first. */
+type Latest = {
+  href: string;
+  title: string;
+  date: Date;
+  summary?: string;
+  tags: string[];
+  label: string;
+  labelClass?: string;
+  readingTime?: string;
+  meta?: string;
+};
 
-const recentPapers = papers.slice(0, 4);
-const recentWriteups = writeups.slice(0, 5);
-const recentNotes = notes.slice(0, 5);
-const recentComps = competitions.slice(0, 3);
+const latest: Latest[] = [
+  ...writeups.map((w) => ({
+    href: `/writeups/${w.id}`,
+    title: w.data.title,
+    date: w.data.date,
+    summary: w.data.summary,
+    tags: w.data.tags,
+    label: `writeup · ${w.data.category}`,
+    labelClass: `cat cat-${w.data.category}`,
+    readingTime: readingTime(w.body),
+    meta: [w.data.platform, w.data.difficulty].filter(Boolean).join(' · ') || undefined,
+  })),
+  ...notes.map((n) => ({
+    href: `/notes/${n.id}`,
+    title: n.data.title,
+    date: n.data.date,
+    summary: n.data.summary,
+    tags: n.data.tags,
+    label: n.data.kind === 'reflex' ? 'reflex' : n.data.kind === 'deep-dive' ? 'deep dive' : 'note',
+    labelClass: n.data.topic ? `cat cat-${n.data.topic}` : undefined,
+    readingTime: readingTime(n.body),
+  })),
+  ...papers.map((p) => ({
+    href: `/papers/${p.id}`,
+    title: p.data.title,
+    date: p.data.date,
+    summary: p.data.verdict ?? p.data.summary,
+    tags: p.data.tags,
+    label: 'paper',
+    readingTime: readingTime(p.body),
+    meta: p.data.venue,
+  })),
+  ...projects.map((p) => ({
+    href: `/projects/${p.id}`,
+    title: p.data.title,
+    date: p.data.date,
+    summary: p.data.summary,
+    tags: [...p.data.stack],
+    label: `project · ${p.data.status}`,
+    readingTime: readingTime(p.body),
+  })),
+  ...competitions.map((c) => {
+    const pct = topPercent(c.data.rank, c.data.totalTeams);
+    return {
+      href: `/competitions/${c.id}`,
+      title: c.data.event,
+      date: c.data.date,
+      summary: c.data.summary,
+      tags: c.data.tags,
+      label: 'competition',
+      meta: c.data.rank
+        ? `${ordinal(c.data.rank)}${c.data.totalTeams ? ` / ${c.data.totalTeams}` : ''}${pct ? ` · top ${pct}%` : ''}`
+        : undefined,
+    };
+  }),
+]
+  .sort((a, b) => b.date.valueOf() - a.date.valueOf())
+  .slice(0, 6);
+
+const everything = [...papers, ...writeups, ...competitions, ...projects, ...notes];
+const topTags = tagCounts(everything as { data: { tags?: string[] } }[]).slice(0, 6).map(([t]) => t);
+
+const socials = [
+  SITE.links.github && { icon: 'github' as const, href: SITE.links.github, label: 'GitHub' },
+  SITE.links.linkedin && { icon: 'linkedin' as const, href: SITE.links.linkedin, label: 'LinkedIn' },
+  { icon: 'mail' as const, href: `mailto:${SITE.author.email}`, label: 'Email' },
+].filter(Boolean) as { icon: 'github' | 'linkedin' | 'mail'; href: string; label: string }[];
 ---
 
-<Base>
+<Base bare>
+  <!-- ============================== Hero ============================== -->
   <section class="hero">
-    <Portrait />
-    <div class="hero__text">
-      <p class="eyebrow">{SITE.tagline}</p>
-      <h1 class="hero__name">{SITE.author.name}</h1>
-      <p class="lede">{SITE.author.bio}</p>
-      <div class="hero__links">
-        <a class="btn btn--primary" href="/projects">See the projects</a>
-        <a class="btn" href={SITE.links.github} target="_blank" rel="noopener">GitHub</a>
-        <a class="btn" href="/about">About</a>
+    <div class="grid-bg" aria-hidden="true"></div>
+
+    <div class="hero__inner wrap">
+      <h1 class="hero__title">
+        <span class="hero__hello">Hello, I'm</span>
+        <span class="typewriter" data-words={JSON.stringify(SITE.typewriter)}>
+          <span class="typewriter__glow" aria-hidden="true"></span>
+          <span class="typewriter__text">{SITE.typewriter[0]}</span><span class="typewriter__caret" aria-hidden="true"></span>
+        </span>
+      </h1>
+
+      <p class="hero__role">{SITE.role}</p>
+      <p class="hero__bio">{SITE.author.bio}</p>
+
+      {
+        topTags.length > 0 && (
+          <div class="hero__tags">
+            {topTags.map((tag) => (
+              <a class="chip chip--outline chip--lg" href={`/tags/${slugifyTag(tag)}`}>#{tag}</a>
+            ))}
+          </div>
+        )
+      }
+
+      <div class="hero__ctas">
+        <a class="btn btn--primary btn--lg" href="/notes">
+          Boot Sequence <Icon name="arrowRight" size={20} />
+        </a>
+        <a class="btn btn--lg" href="/about">
+          <Icon name="terminal" size={20} /> <span class="mono">`whoami`</span>
+        </a>
       </div>
+
+      <div class="socials socials--hero">
+        {
+          socials.map((s) => (
+            <a
+              class="social"
+              href={s.href}
+              title={s.label}
+              aria-label={s.label}
+              target={s.href.startsWith('http') ? '_blank' : undefined}
+              rel={s.href.startsWith('http') ? 'me noopener' : undefined}
+            >
+              <Icon name={s.icon} size={20} />
+            </a>
+          ))
+        }
+      </div>
+    </div>
+
+    <div class="hero__scroll" aria-hidden="true"></div>
+  </section>
+
+  <!-- ========================= Latest content ========================= -->
+  <section class="band">
+    <div class="wrap">
+      <div class="band-head" data-reveal>
+        <div>
+          <h2 class="band-title">Incoming Transmissions</h2>
+          <p class="band-sub">Recent writeups, deep dives, reading notes and projects.</p>
+        </div>
+        <a class="arrow-link" href="/notes">
+          Read all notes <Icon name="arrowRight" />
+        </a>
+      </div>
+
+      {
+        latest.length > 0 ? (
+          <div class="card-grid" data-reveal>
+            {latest.map((item) => (
+              <PostCard
+                href={item.href}
+                title={item.title}
+                date={item.date}
+                readingTime={item.readingTime}
+                summary={item.summary}
+                tags={item.tags}
+                label={item.label}
+                labelClass={item.labelClass}
+                meta={item.meta}
+              />
+            ))}
+          </div>
+        ) : (
+          <p class="empty">
+            Nothing published yet. Mark a note <code>published: true</code> in your vault.
+          </p>
+        )
+      }
     </div>
   </section>
 
-  <Dashboard
-    items={activity}
-    counts={sectionCounts}
-    writeupCategories={writeupCategories}
-    competitions={compRows}
-  />
-
-  {
-    shownProjects.length > 0 && (
-      <section class="section" data-reveal>
-        <div class="section-head">
-          <h2>Projects</h2>
-          <a href="/projects">All projects &rarr;</a>
+  <!-- ============================ Activity ============================ -->
+  <section class="band band--border">
+    <div class="wrap">
+      <div class="band-head" data-reveal>
+        <div>
+          <h2 class="band-title">System Telemetry</h2>
+          <p class="band-sub">What I've been publishing, month by month.</p>
         </div>
-        <div class="grid grid--2">
-          {shownProjects.map((p) => (
-            <article class="card">
-              <div class="card__meta">
-                <span class={`badge ${p.data.status === 'shipped' ? '' : 'badge--neutral'}`}>
-                  {p.data.status}
-                </span>
-                <span>{formatMonth(p.data.date)}</span>
-              </div>
-              <h3 class="card__title">
-                <a href={`/projects/${p.id}`}>{p.data.title}</a>
-              </h3>
-              {p.data.summary && <p class="card__body">{p.data.summary}</p>}
-              {p.data.results.length > 0 && (
-                <p class="card__body mono" style="color:var(--accent)">{p.data.results[0]}</p>
-              )}
-              <div class="card__foot">
-                <Tags tags={p.data.stack} limit={4} link={false} />
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-    )
-  }
-
-  {
-    recentComps.length > 0 && (
-      <section class="section" data-reveal>
-        <div class="section-head">
-          <h2>Recent competitions</h2>
-          <a href="/competitions">All results &rarr;</a>
-        </div>
-        <div class="grid grid--3">
-          {recentComps.map((c) => {
-            const pct = topPercent(c.data.rank, c.data.totalTeams);
-            return (
-              <article class="card">
-                <div class="card__meta">
-                  <span>{formatMonth(c.data.date)}</span>
-                  {c.data.scope && <span class="tag">{c.data.scope}</span>}
-                </div>
-                <h3 class="card__title">
-                  <a href={`/competitions/${c.id}`}>{c.data.event}</a>
-                </h3>
-                <div class="card__meta">
-                  {c.data.rank && (
-                    <span class={rankClass(c.data.rank)}>
-                      {ordinal(c.data.rank)}
-                      {c.data.totalTeams && <span class="rank__sub">/ {c.data.totalTeams}</span>}
-                    </span>
-                  )}
-                  {pct && <span>top {pct}%</span>}
-                  {c.data.score !== undefined && <span>{c.data.score} pts</span>}
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      </section>
-    )
-  }
-
-  {
-    recentNotes.length > 0 && (
-      <section class="section" data-reveal>
-        <div class="section-head">
-          <h2>Notes</h2>
-          <a href="/notes">All notes &rarr;</a>
-        </div>
-        <div class="grid grid--3">
-          {recentNotes.slice(0, 3).map((n) => (
-            <article class="card">
-              <div class="card__meta">
-                {n.data.topic && <span class={`tag cat cat-${n.data.topic}`}>{n.data.topic}</span>}
-                <span>{n.data.kind}</span>
-              </div>
-              <h3 class="card__title">
-                <a href={`/notes/${n.id}`}>{n.data.title}</a>
-              </h3>
-              {n.data.summary && <p class="card__body">{n.data.summary}</p>}
-            </article>
-          ))}
-        </div>
-      </section>
-    )
-  }
-
-  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:2.5rem;margin-top:3rem" data-reveal>
-    <section>
-      <div class="section-head">
-        <h2>Papers &amp; notes</h2>
-        <a href="/papers">All &rarr;</a>
       </div>
-      {
-        recentPapers.length > 0 ? (
-          <div class="rows">
-            {recentPapers.map((p) => (
-              <article class="row">
-                <div class="row__title">
-                  <a href={`/papers/${p.id}`}>{p.data.title}</a>
-                </div>
-                <div class="row__date">{formatDate(p.data.date)}</div>
-                <div class="row__meta">
-                  {p.data.venue && <span>{p.data.venue}</span>}
-                  {p.data.pass && <span class="tag">pass {p.data.pass}</span>}
-                </div>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <p class="empty">
-            No paper notes published yet. Mark one <code>published: true</code> in your vault.
-          </p>
-        )
-      }
-    </section>
+      <Dashboard
+        items={activity}
+        counts={sectionCounts}
+        writeupCategories={writeupCategories}
+        competitions={compRows}
+      />
+    </div>
+  </section>
 
-    <section>
-      <div class="section-head">
-        <h2>Writeups</h2>
-        <a href="/writeups">All &rarr;</a>
-      </div>
-      {
-        recentWriteups.length > 0 ? (
-          <div class="rows">
-            {recentWriteups.map((w) => (
-              <article class="row">
-                <div class="row__title">
-                  <a href={`/writeups/${w.id}`}>{w.data.title}</a>
-                </div>
-                <div class="row__date">{formatDate(w.data.date)}</div>
-                <div class="row__meta">
-                  <span class={`tag cat cat-${w.data.category}`}>{w.data.category}</span>
-                  {w.data.platform && <span>{w.data.platform}</span>}
-                  {w.data.difficulty && <span>{w.data.difficulty}</span>}
-                </div>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <p class="empty">
-            No writeups published yet. Mark one <code>published: true</code> in your vault.
-          </p>
-        )
-      }
-    </section>
-  </div>
+  <!-- ============================ Contact ============================= -->
+  <section class="band band--border connect">
+    <div class="wrap connect__inner" data-reveal>
+      <div class="connect__icon"><Icon name="network" size={32} /></div>
+      <h2 class="band-title">Establish Connection</h2>
+      <p class="band-sub">
+        Want to team up for a CTF, talk about a paper, or discuss detection engineering? My comms are open.
+      </p>
+      <a class="btn btn--invert btn--xl" href={`mailto:${SITE.author.email}`}>
+        <Icon name="mail" size={20} /> Initialize Contact
+      </a>
+    </div>
+  </section>
 </Base>
+
+<script>
+  // Type out each word, pause, erase, move on. Reduced-motion visitors get
+  // the first word, static — which is also what the HTML ships with.
+  const root = document.querySelector<HTMLElement>('.typewriter');
+  const out = root?.querySelector<HTMLElement>('.typewriter__text');
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (root && out && !reduced) {
+    const words: string[] = JSON.parse(root.dataset.words ?? '[]');
+    let word = 0;
+    let text = words[0] ?? '';
+    let deleting = false;
+
+    const tick = () => {
+      const full = words[word];
+      if (deleting) {
+        text = full.slice(0, text.length - 1);
+        if (!text) {
+          deleting = false;
+          word = (word + 1) % words.length;
+          out.textContent = text;
+          return setTimeout(tick, 500);
+        }
+        out.textContent = text;
+        return setTimeout(tick, 50);
+      }
+      text = full.slice(0, text.length + 1);
+      out.textContent = text;
+      if (text === full) {
+        deleting = true;
+        return setTimeout(tick, 3000);
+      }
+      return setTimeout(tick, 100);
+    };
+
+    if (words.length > 1) setTimeout(() => { deleting = true; tick(); }, 3000);
+  }
+</script>

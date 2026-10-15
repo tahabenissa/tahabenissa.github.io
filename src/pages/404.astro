@@ -1,18 +1,21 @@
 ---
 import Base from '../layouts/Base.astro';
+import Icon from '../components/Icon.astro';
 ---
 
-<Base title="Not found" narrow>
-  <div class="page-head">
-    <p class="eyebrow">404</p>
-    <h1>That page does not exist</h1>
-    <p class="lede">
-      The link may be stale, or the note may not be published yet.
-    </p>
-  </div>
-  <div class="hero__links" style="margin-top:0">
-    <a class="btn btn--primary" href="/">Home</a>
-    <a class="btn" href="/writeups">Writeups</a>
-    <a class="btn" href="/papers">Papers</a>
-  </div>
+<Base title="Not found" bare>
+  <section class="hero hero--short">
+    <div class="grid-bg" aria-hidden="true"></div>
+    <div class="hero__inner wrap">
+      <p class="mono faint">$ cat {Astro.url.pathname}</p>
+      <h1 class="hero__title"><span class="accent">404</span></h1>
+      <p class="hero__role">No such file or directory</p>
+      <p class="hero__bio">The link may be stale, or the note may not be published yet.</p>
+      <div class="hero__ctas">
+        <a class="btn btn--primary btn--lg" href="/"><Icon name="terminal" size={20} /> cd ~</a>
+        <a class="btn btn--lg" href="/writeups">Writeups</a>
+        <a class="btn btn--lg" href="/notes">Notes</a>
+      </div>
+    </div>
+  </section>
 </Base>

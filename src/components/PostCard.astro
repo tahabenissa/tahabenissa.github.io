@@ -1,0 +1,93 @@
+---
+import Icon from './Icon.astro';
+import { formatDate, isoDate, slugifyTag } from '../lib/content';
+
+/**
+ * One card shape for every section. Pages pass what they have; anything
+ * missing just isn't drawn.
+ */
+interface Props {
+  href: string;
+  title: string;
+  date: Date;
+  readingTime?: string;
+  summary?: string;
+  tags?: readonly string[];
+  /** Small coloured label above the title — category, topic, status… */
+  label?: string;
+  /** Class for the label, e.g. `cat cat-web`. */
+  labelClass?: string;
+  /** Extra mono line under the title (platform, venue, rank…). */
+  meta?: string;
+  draft?: boolean;
+  /** Tags link to /tags/<tag> unless false. */
+  linkTags?: boolean;
+  /** Space-separated values the list filter matches chips against. */
+  chips?: string;
+  tagLimit?: number;
+}
+
+const {
+  href,
+  title,
+  date,
+  readingTime,
+  summary,
+  tags = [],
+  label,
+  labelClass = '',
+  meta,
+  draft = false,
+  linkTags = true,
+  chips = '',
+  tagLimit = 3,
+} = Astro.props;
+
+const shown = tags.slice(0, tagLimit);
+const hidden = tags.length - shown.length;
+const search = [title, summary, meta, label, ...tags].filter(Boolean).join(' ').toLowerCase();
+---
+
+<article class="post-card" data-search={search} data-chips={chips}>
+  <div class="post-card__meta">
+    <span class="post-card__when">
+      <Icon name="calendar" size={14} />
+      <time datetime={isoDate(date)}>{formatDate(date)}</time>
+    </span>
+    {
+      readingTime && (
+        <span class="post-card__when">
+          <Icon name="clock" size={14} />
+          {readingTime}
+        </span>
+      )
+    }
+  </div>
+
+  {(label || draft) && (
+    <div class="post-card__labels">
+      {label && <span class:list={['tag', labelClass]}>{label}</span>}
+      {draft && <span class="badge badge--warn">draft</span>}
+    </div>
+  )}
+
+  <h3 class="post-card__title"><a href={href}>{title}</a></h3>
+  {meta && <p class="post-card__sub">{meta}</p>}
+  {summary && <p class="post-card__body">{summary}</p>}
+  <slot />
+
+  {
+    tags.length > 0 && (
+      <div class="post-card__tags">
+        {shown.map((tag) =>
+          linkTags ? (
+            <a class="chip" href={`/tags/${slugifyTag(tag)}`}>#{tag}</a>
+          ) : (
+            <span class="chip">{tag}</span>
+          )
+        )}
+        {hidden > 0 && <span class="chip chip--outline">+{hidden}</span>}
+      </div>
+    )
+  }
+</article>

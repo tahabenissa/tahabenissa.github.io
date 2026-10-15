@@ -134,13 +134,14 @@ into `public/vault-assets/`, and callouts become blockquotes.
 
 | What | Where |
 |---|---|
-| Name, bio, links, nav | `src/config.ts` |
+| Name, bio, links, nav, logo handle, typewriter words, About-page focus areas and tools | `src/config.ts` |
 | Colours, type, spacing | `src/styles/global.css` (tokens at the top) |
 | What fields a section accepts | `src/content.config.ts` |
 | Vault folder map, field aliases | `scripts/sync-vault.mjs` |
 | About page prose | `src/pages/about.astro` |
 
-Dark mode is automatic from the OS, with a manual toggle that persists.
+Dark mode is automatic from the OS, with a manual toggle that persists. The look (emerald on slate,
+monospace headings, typewriter hero) is modelled on [0xHabib](https://github.com/mohamedjawady/mohamedjawady.github.io).
 
 ---
 

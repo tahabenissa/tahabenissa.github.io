@@ -88,3 +88,39 @@ export function topPercent(rank?: number, total?: number): number | null {
   if (!rank || !total || total <= 0) return null;
   return Math.max(1, Math.round((rank / total) * 100));
 }
+
+/** "6 min read", from the raw markdown body at ~220 words a minute. */
+export function readingTime(body: string | undefined): string {
+  if (!body) return '1 min read';
+  const words = body
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean).length;
+  return `${Math.max(1, Math.round(words / 220))} min read`;
+}
+
+/**
+ * Filter chips for a list page: every distinct value, most used first,
+ * as { value: slug, label: original }.
+ */
+export function chipList(values: string[][]): { value: string; label: string }[] {
+  const counts = new Map<string, { label: string; n: number }>();
+  for (const list of values) {
+    for (const label of new Set(list.filter(Boolean))) {
+      const value = slugifyTag(label);
+      if (!value) continue;
+      const hit = counts.get(value);
+      if (hit) hit.n++;
+      else counts.set(value, { label, n: 1 });
+    }
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1].n - a[1].n || a[1].label.localeCompare(b[1].label))
+    .map(([value, { label }]) => ({ value, label }));
+}
+
+/** The matching `data-chips` string for one entry. */
+export function chipAttr(values: (string | undefined)[]): string {
+  return values.filter((v): v is string => !!v).map(slugifyTag).filter(Boolean).join(' ');
+}

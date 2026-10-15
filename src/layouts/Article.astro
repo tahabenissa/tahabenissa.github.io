@@ -1,0 +1,153 @@
+---
+import type { MarkdownHeading } from 'astro';
+import Base from './Base.astro';
+import Icon from '../components/Icon.astro';
+import { formatDate, isoDate, slugifyTag } from '../lib/content';
+
+/**
+ * Every detail page (writeup, note, paper, project, competition) renders
+ * through this: reading-progress bar, title block, then the body with a
+ * sticky "On this page" sidebar on wide screens.
+ *
+ * Slots:
+ *   default  — the article body (usually <Content />)
+ *   before   — anything between the title block and the body (facts, buttons)
+ *   after    — anything after the body (related writeups…)
+ */
+interface Props {
+  title: string;
+  description?: string;
+  section: { label: string; href: string };
+  /** Second crumb after the section, e.g. the category. */
+  crumb?: string;
+  date: Date;
+  datePrefix?: string;
+  updated?: Date;
+  readingTime?: string;
+  summary?: string;
+  tags?: readonly string[];
+  headings?: MarkdownHeading[];
+  /** Small labels in the meta row. */
+  badges?: { text: string; class?: string }[];
+}
+
+const {
+  title,
+  description,
+  section,
+  crumb,
+  date,
+  datePrefix,
+  updated,
+  readingTime,
+  summary,
+  tags = [],
+  headings = [],
+  badges = [],
+} = Astro.props;
+
+const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
+const hasToc = toc.filter((h) => h.depth === 2).length >= 2;
+---
+
+<Base title={title} description={description ?? summary} bare>
+  <div class="reading-progress" aria-hidden="true"><span></span></div>
+
+  <section class="article-hero">
+    <div class="grid-bg" aria-hidden="true"></div>
+    <div class="wrap article-hero__inner">
+      <a class="back-link" href={section.href}>
+        <Icon name="arrowLeft" size={14} /> {section.label}{crumb && <span class="faint"> / {crumb}</span>}
+      </a>
+      <h1 class="article-title">{title}</h1>
+      <div class="article-meta">
+        <span class="meta-item">
+          <Icon name="calendar" size={14} />
+          <time datetime={isoDate(date)}>{datePrefix && `${datePrefix} `}{formatDate(date)}</time>
+        </span>
+        {updated && <span class="meta-item">updated {formatDate(updated)}</span>}
+        {
+          readingTime && (
+            <span class="meta-item">
+              <Icon name="clock" size={14} />
+              {readingTime}
+            </span>
+          )
+        }
+        {badges.map((b) => <span class:list={[b.class ?? 'tag']}>{b.text}</span>)}
+      </div>
+      {
+        tags.length > 0 && (
+          <div class="post-card__tags">
+            {tags.map((tag) => (
+              <a class="chip" href={`/tags/${slugifyTag(tag)}`}>#{tag}</a>
+            ))}
+          </div>
+        )
+      }
+    </div>
+  </section>
+
+  <div class:list={['wrap', 'article-layout', hasToc && 'article-layout--toc']}>
+    <div class="article-main">
+      {summary && <p class="lede article-lede">{summary}</p>}
+      <slot name="before" />
+      <article class="prose">
+        <slot />
+      </article>
+      <slot name="after" />
+    </div>
+
+    {
+      hasToc && (
+        <aside class="toc" aria-label="On this page">
+          <p class="toc__title"><Icon name="list" size={14} /> On this page</p>
+          <ul>
+            {toc.map((h) => (
+              <li class={`toc__d${h.depth}`}>
+                <a href={`#${h.slug}`} data-toc-link={h.slug}>{h.text}</a>
+              </li>
+            ))}
+          </ul>
+        </aside>
+      )
+    }
+  </div>
+</Base>
+
+<script>
+  // Reading progress.
+  const bar = document.querySelector<HTMLElement>('.reading-progress span');
+  const article = document.querySelector<HTMLElement>('.article-main');
+  if (bar && article) {
+    const update = () => {
+      const rect = article.getBoundingClientRect();
+      const total = rect.height - window.innerHeight;
+      const done = Math.min(1, Math.max(0, -rect.top / Math.max(1, total)));
+      bar.style.transform = `scaleX(${done})`;
+    };
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+  }
+
+  // Highlight the section currently being read.
+  const links = new Map<string, HTMLElement>();
+  document.querySelectorAll<HTMLElement>('[data-toc-link]').forEach((a) => links.set(a.dataset.tocLink!, a));
+  if (links.size && 'IntersectionObserver' in window) {
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          links.forEach((a) => a.classList.remove('is-active'));
+          links.get(entry.target.id)?.classList.add('is-active');
+        }
+      },
+      { rootMargin: '-90px 0px -75% 0px' }
+    );
+    links.forEach((_, id) => {
+      const el = document.getElementById(id);
+      if (el) io.observe(el);
+    });
+  }
+</script>
